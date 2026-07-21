@@ -16,30 +16,31 @@ protein families it has seen many times?*
 ## Why
 
 Frontier co-folding affinity models report Pearson ≈ 0.6 on standard benchmarks. But those
-test sets are dominated by protein families that are heavily represented in the PDB. When
-you stratify accuracy by **protein-family redundancy**, the picture changes sharply:
+test sets are dominated by protein families heavily represented in the PDB. Stratify accuracy
+by **protein-family redundancy** (matched-pK, label spread held constant) and the picture
+changes sharply — and the key controls tell you *why*:
 
-| protein family size | Boltz-2 | Nesso-1 |
-|---|---|---|
-| 1 (singleton, novel) | **−0.03** | +0.32 |
-| 2–5 | −0.01 | +0.54 |
-| 6–20 | −0.01 | +0.41 |
-| 21–80 | +0.42 | +0.67 |
-| 81–300 | +0.37 | +0.62 |
-| 301+ (redundant) | +0.59 | +0.52 |
+| protein family size | Nesso-1 | Boltz-2 | RF-QSAR* | ligand-kNN* |
+|---|---|---|---|---|
+| 1 (singleton, novel) | +0.11 | **−0.03** | +0.26 | +0.22 |
+| 2–5 | +0.23 | −0.01 | +0.26 | +0.22 |
+| 6–20 | +0.38 | −0.01 | +0.26 | +0.19 |
+| 21–80 | +0.42 | +0.42 | +0.25 | +0.24 |
+| 81–300 | +0.44 | +0.37 | +0.20 | +0.17 |
+| 301+ (redundant) | +0.55 | +0.59 | +0.18 | +0.18 |
 
-*Per-bin Pearson vs experimental pK, label spread held constant. On novel families both
-models drop toward zero.* And on a genuinely novel, post-cutoff target (OpenBind EV-A71 2A
-protease), **neither model reliably beats a molecular-weight baseline**:
+*\*RF-QSAR and ligand-kNN are evaluated under **family-disjoint** cross-validation — they
+cannot memorize the test family, and they are **flat**. The co-folders rise steeply. That gap
+is the leakage.* On **novel families a shallow family-disjoint random forest (0.41) beats both
+billion-parameter co-folders** (Nesso 0.32, Boltz 0.31).
 
-| method | Spearman ρ |
-|---|---|
-| molecular weight | 0.47 |
-| Nesso-1 | 0.49 |
-| Boltz-2 | 0.40 |
+On a genuinely novel, post-cutoff target (OpenBind EV-A71 2A protease), **neither co-folder
+reliably beats a molecular-weight baseline** (Nesso 0.49, MW 0.47, Boltz 0.40 Spearman).
 
-A single headline correlation hides this. FamBench measures the thing that matters for a
-new drug program: **accuracy on protein families you have not seen.**
+A single headline correlation hides all of this. FamBench measures the thing that matters for
+a new drug program: **accuracy on protein families you have not seen.**
+
+📄 **Paper**: [`paper/fambench.pdf`](paper/) — full experiments, controls, and analysis.
 
 ## Install
 

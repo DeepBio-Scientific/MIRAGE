@@ -11,3 +11,12 @@ dist/
 venv/
 *.log
 .DS_Store
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+paper/*.log
