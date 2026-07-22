@@ -38,7 +38,9 @@ a two-dimensional analysis localizes the dependence to the \emph{protein-family}
 chemistry. On novel families the practical ranking inverts: a shallow family-disjoint random
 forest ($r=0.41$) beats both co-folders ($0.32$, $0.31$). A prospective, structurally novel
 post-cutoff target (OpenBind EV-A71 2A protease) supplies external confirmation: no co-folder
-reliably exceeds a molecular-weight baseline. We call this effect \emph{redundancy-driven
+reliably exceeds a molecular-weight baseline. Applying the same ligand-only control to the standard
+LBA30 benchmark---which no prior work reports---molecular weight alone ($r=0.44$) matches or beats
+most of the published leaderboard. We call this effect \emph{redundancy-driven
 inflation} / \emph{training-familiarity dependence} rather than leakage, and release FamBench---a
 plug-in benchmark and dataset that measures accuracy across the full family-support curve, with
 family-disjoint controls and two-level bootstrap inference.
@@ -389,6 +391,56 @@ ESMFold2 (ipTM) & 281 & 0.163 & 0.104 & $-0.00$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{The missing control on a standard benchmark: LBA30}
+\label{sec:lba30}
+
+Our thesis is not specific to the FamBench dataset. ATOM3D LBA \citep{townshend2021atom3d} is the
+field's standard structure-based affinity-generalization benchmark: PDBbind-refined complexes split
+by 30\% protein sequence identity (``LBA30''; 3507 train / 490 test), on which recent geometric
+deep nets report large gains---IPBind \citep{li2025ipbind} reports Pearson $0.732$, a claimed 19.6\%
+relative improvement. Yet no published LBA30 result reports a ligand-only, molecular-weight, or QSAR
+control; the field compares only against other structure/sequence deep nets. We supply that control
+(Table~\ref{tab:lba30}). A ligand-only random forest (ECFP4, no protein) scores $0.457$ and
+molecular weight \emph{alone} scores $0.438$.
+
+Two conclusions follow, and we state both fairly. First, the top methods genuinely learn structural
+signal: IPBind's $0.732$ clears the ligand-only ceiling by $\approx 0.28$, so it is not ligand
+memorization. Second, and more consequential for the field, molecular weight alone matches or
+exceeds much of the published LBA30 leaderboard---above ENN ($0.389$), on par with DeepDTA
+($0.472$), and within $0.10$ of 3DCNN ($0.550$) and GNN ($0.545$). Small reported margins over these
+methods were never contextualized against a trivial ligand descriptor. The same control also
+reconciles LBA30 with FamBench: the 30\%-\emph{sequence} split is a far weaker generalization test
+than singleton-family stratification---ligand-only reaches $0.46$ on LBA30 but collapses to
+$0.31$--$0.41$ on FamBench novel families---so $0.73$ (LBA30) and $0.31$ (FamBench novel) do not
+contradict; they measure different stringencies.
+
+\begin{table}[t]
+\centering\small
+\caption{LBA30 (test $n{=}453$), Pearson $r$ on $\mathrm{p}K$. Structure/sequence deep-net numbers
+are from the literature \citep{townshend2021atom3d,li2025ipbind}; the three ligand-only controls
+(bold) are ours and have not previously been reported. Molecular weight alone matches or beats most
+of the leaderboard; only the recent top methods clearly exceed it.}
+\label{tab:lba30}
+\begin{tabular}{lc@{\hskip 2em}lc}
+\toprule
+Structure/sequence models & $r$ & Ligand-only controls (ours) & $r$ \\
+\midrule
+IPBind      & 0.732 & \textbf{ligand-only RF (ECFP4)} & \textbf{0.457} \\
+EHIGN       & 0.612 & \textbf{molecular weight}       & \textbf{0.438} \\
+GIGN        & 0.586 & \textbf{ligand-$k$NN}           & \textbf{0.429} \\
+3DCNN       & 0.550 & clogp                            & 0.212 \\
+GNN         & 0.545 & & \\
+DeepDTA     & 0.472 & & \\
+ENN         & 0.389 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A related benchmark, CORDIAL \citep{brown2025cordial}, is explicitly designed to exclude fold/family
+identity and validated leave-superfamily-out; it too reports no ligand-only or trivial baseline. The
+absence of such controls across the generalization-benchmark literature is precisely the gap
+FamBench institutionalizes.
 
 \section{Discussion}
 

@@ -43,6 +43,13 @@ both billion-parameter co-folders (Nesso 0.32, Boltz 0.31). On a novel post-cuto
 (OpenBind EV-A71 2A protease), neither co-folder reliably beats molecular weight (Nesso 0.49, MW
 0.47, Boltz 0.40).
 
+**It holds on the field's own benchmark, not just ours.** On the standard ATOM3D **LBA30**
+(30%-identity split), where IPBind reports Pearson 0.732 and no paper has ever reported a
+ligand-only control, we find **molecular weight alone scores 0.44** — matching or beating most of
+the published leaderboard (ENN 0.39, DeepDTA 0.47, near 3DCNN 0.55 / GNN 0.55). The top methods
+(IPBind, EHIGN, GIGN) do clear the ligand-only ceiling (0.46), so they learn real structure — but
+the small margins reported by the rest were never checked against ligand size.
+
 We call this **redundancy-driven inflation / training-familiarity dependence**, not "leakage" —
 reserving that term for demonstrable train/test boundary crossing. FamBench measures the thing
 that matters for a new drug program: **transfer to protein families you have not seen.**
