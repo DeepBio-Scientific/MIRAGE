@@ -49,6 +49,25 @@ that matters for a new drug program: **transfer to protein families you have not
 
 📄 **Paper**: [`paper/fambench.pdf`](paper/) — full experiments, controls, and analysis.
 
+## Models evaluated
+
+FamBench audits 13 methods across four classes. Any new model plugs in the same way.
+
+| class | methods | on FamBench |
+|---|---|---|
+| **affinity co-folders** | Nesso-1, Boltz-2 | strong family-support dependence (G_m +0.45 / +0.62) |
+| **confidence-proxy co-folders** (ipTM, not affinity) | Chai-1, ESMFold2 | Chai-1's ipTM *itself* carries the dependence (novel 0.16 → redundant 0.46, t=−3.8) with no affinity head; ESMFold2's ipTM is a weak, uncalibrated proxy (t=−0.7) |
+| **family-disjoint ML controls** | RF-QSAR, ligand-kNN | flat across family support (G_m ≈ 0); **beat the co-folders on novel families** |
+| **trivial / identity baselines** | molecular weight, clogp, family-mean | family-mean alone = 0.564 (memorization ceiling); MW ties the co-folders on the novel target |
+| **temporal-arm baselines** (OpenBind) | gnina, smina, AEV-PLIG, AQ-Affinity | none reliably beat molecular weight |
+
+That Chai-1 (structure confidence, *no* affinity head) reproduces the family-support dependence
+shows it lives in the learned structural representation — not just a trained affinity head.
+
+> **AlphaFold3** is a pluggable stub ([`fambench/cofolders.py`](fambench/cofolders.py)): its code
+> is open but weights are request-only, and it has no affinity head. Provide weights and it runs
+> as an ipTM proxy with one call.
+
 ## Install
 
 ```bash
@@ -95,10 +114,14 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
 
 - **Family-size dose-response** — per-bin correlation, matched-pK so label spread cannot
   confound it, with bootstrap CIs.
+- **Family generalization gap `G_m`** — `r(support≥301) − r(support=1)`, with a two-level
+  (family→ligand) bootstrap CI. The headline: large and positive means accuracy is bought by
+  family support.
 - **Novel-family Pearson** — the single number to report: accuracy on singleton + small
   families.
-- **Leakage slope** — regression of absolute error on `log10(family_size)`, controlling for
-  the affinity regime; a negative slope means accuracy is bought by redundancy.
+- **Family-support slope** — regression of absolute error on `log10(family_size)`, controlling
+  for the affinity regime and covariates; a negative slope means accuracy tracks how familiar
+  the family is.
 - **Temporal arm** — within-target Spearman on a novel target, head-to-head against
   molecular weight and clogp.
 
@@ -121,9 +144,10 @@ push your own copy to the Hub with [`scripts/push_to_hub.py`](scripts/push_to_hu
 
 ## Reporting results
 
-When you report a FamBench number, please quote the **novel-family Pearson** and the
-**leakage slope**, not just the overall correlation — that is the whole point. A model that
-scores 0.6 overall but 0.1 on novel families should say so.
+When you report a FamBench number, please quote the **family generalization gap `G_m`** and the
+**novel-family Pearson**, not just the overall correlation — that is the whole point. A model that
+scores 0.6 overall but 0.1 on novel families should say so. Prefer equal-family weighting and the
+two-level bootstrap; report the OpenBind score as *one external target*, not population-level proof.
 
 ## Provenance & licensing
 
