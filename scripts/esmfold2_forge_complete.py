@@ -35,7 +35,7 @@ out=json.load(open(OUT)) if os.path.exists(OUT) else {}
 todo=[c for c in codes if c not in out and c in seqs and c in smiles]
 print(f"have {len(out)}, remaining to complete 600: {len(todo)}", flush=True)
 
-done=0; capped=False; t0=time.time()
+done=0; capped=False; consec=0; t0=time.time()
 for i,code in enumerate(todo):
     try:
         inp=StructurePredictionInput(sequences=[
@@ -47,11 +47,12 @@ for i,code in enumerate(todo):
             try: val=float(pci['A']['B'])
             except Exception: val=None
         if val is None: val=float(r.iptm)
-        out[code]=val; done+=1
+        out[code]=val; done+=1; consec=0
         json.dump(out, open(OUT,'w'))
     except Exception as e:
-        if 'daily credit' in str(e) or 'credit limit' in str(e):
-            print(f"DAILY CAP after +{done} (total {len(out)}/600)", flush=True); capped=True; break
+        consec+=1
+        if consec>=5:
+            print(f"CAP/ERROR: {consec} consecutive failures after +{done} (total {len(out)}/600); stopping", flush=True); capped=True; break
     time.sleep(3.2)
     if (i+1)%10==0: print(f"{i+1}/{len(todo)} +{done} {time.time()-t0:.0f}s", flush=True)
 json.dump(out, open(OUT,'w'))
