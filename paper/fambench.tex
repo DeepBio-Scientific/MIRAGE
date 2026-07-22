@@ -365,13 +365,15 @@ AQ-Affinity        & 0.134 & $-0.019$ \\
 
 Chai-1 and ESMFold2 predict structure and an interface confidence (ipTM), not affinity. Scoring
 their ipTM as an affinity proxy (Table~\ref{tab:proxy}), the signal is weaker than the
-affinity-head models---Chai-1 reaches overall Pearson $0.39$ ($n{=}598$), ESMFold2 $0.21$
-($n{=}237$ folds via the hosted API). Two observations follow. First, the affinity heads in
-Nesso-1/Boltz-2 add real signal over raw structural confidence. Second, and more telling, the
-well-powered Chai-1 ipTM \emph{itself} carries the family-support dependence: it rises from
-$0.16$ on novel families to $0.46$ on redundant ones (family-support slope $t=-3.8$). The
-familiarity dependence is therefore a property of the learned structural representation, not only
-of a trained affinity head. AlphaFold3 would enter this category but its weights are request-only.
+affinity-head models, and the two proxies differ instructively. Chai-1 (overall Pearson $0.39$,
+$n{=}598$) \emph{itself} carries the family-support dependence---rising from $0.16$ on novel
+families to $0.46$ on redundant ones (family-support slope $t=-3.8$)---so the familiarity
+dependence is a property of the learned structural representation, not only of a trained affinity
+head. ESMFold2, by contrast (overall $0.16$, $n{=}281$ via the hosted API), is a weak and noisy
+affinity proxy with \emph{no} significant family-support dependence ($t=-0.7$); this is consistent
+with ESMFold2 being optimized for protein--protein interfaces rather than small molecules, so its
+protein--ligand ipTM is poorly calibrated for affinity. AlphaFold3 would enter this category but
+its weights are request-only.
 
 \begin{table}[t]
 \centering\small
@@ -383,7 +385,7 @@ affinity heads, but the well-powered Chai-1 ipTM shows the same family-support d
 Method & $n$ & overall $r$ & novel-fam.\ $r$ & redundant-fam.\ $r$ \\
 \midrule
 Chai-1 (ipTM)   & 598 & 0.394 & 0.155 & 0.461 \\
-ESMFold2 (ipTM) & 237 & 0.208 & 0.169 & \,--\,(underpowered) \\
+ESMFold2 (ipTM) & 281 & 0.163 & 0.104 & $-0.00$ \\
 \bottomrule
 \end{tabular}
 \end{table}
