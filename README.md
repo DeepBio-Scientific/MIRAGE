@@ -9,36 +9,43 @@ protein families it has seen many times?*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/mrnafold/fambench)
+[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBioScientific/fambench)
 
 </div>
 
 ## Why
 
-Frontier co-folding affinity models report Pearson ≈ 0.6 on standard benchmarks. But those
-test sets are dominated by protein families heavily represented in the PDB. Stratify accuracy
-by **protein-family redundancy** (matched-pK, label spread held constant) and the picture
-changes sharply — and the key controls tell you *why*:
+Frontier co-folding affinity models report Pearson ≈ 0.6, but that number conflates two
+things: *interpolation within protein families already in public data* and *transfer to novel
+targets*. FamBench measures the second. The central result is an **interaction** — co-folders
+depend strongly on protein-family support; family-disjoint shallow controls do not.
 
-| protein family size | Nesso-1 | Boltz-2 | RF-QSAR* | ligand-kNN* |
-|---|---|---|---|---|
-| 1 (singleton, novel) | +0.11 | **−0.03** | +0.26 | +0.22 |
-| 2–5 | +0.23 | −0.01 | +0.26 | +0.22 |
-| 6–20 | +0.38 | −0.01 | +0.26 | +0.19 |
-| 21–80 | +0.42 | +0.42 | +0.25 | +0.24 |
-| 81–300 | +0.44 | +0.37 | +0.20 | +0.17 |
-| 301+ (redundant) | +0.55 | +0.59 | +0.18 | +0.18 |
+Define the **family generalization gap** `G_m = r(support≥301) − r(support=1)` (matched-affinity,
+two-level bootstrap):
 
-*\*RF-QSAR and ligand-kNN are evaluated under **family-disjoint** cross-validation — they
-cannot memorize the test family, and they are **flat**. The co-folders rise steeply. That gap
-is the leakage.* On **novel families a shallow family-disjoint random forest (0.41) beats both
-billion-parameter co-folders** (Nesso 0.32, Boltz 0.31).
+| method | class | G_m | 95% CI |
+|---|---|---|---|
+| Nesso-1 | affinity co-folder | **+0.45** | [+0.27, +0.61] |
+| Boltz-2 | affinity co-folder | **+0.62** | [+0.12, +1.01] |
+| RF-QSAR | family-disjoint ML | −0.01 | [−0.16, +0.16] |
+| ligand-kNN | family-disjoint ML | −0.03 | [−0.17, +0.11] |
+| mol. weight | trivial | −0.01 | [−0.15, +0.15] |
 
-On a genuinely novel, post-cutoff target (OpenBind EV-A71 2A protease), **neither co-folder
-reliably beats a molecular-weight baseline** (Nesso 0.49, MW 0.47, Boltz 0.40 Spearman).
+Co-folder gaps are significantly positive; every family-disjoint / trivial control's spans zero.
+The shallow controls aren't weaker co-folders — they behave *differently* as family redundancy
+changes. Family support predicts accuracy after controlling for ligand similarity, protein length,
+date, family affinity variance, measurement type, and affinity range (Nesso t=−8.1, Boltz t=−3.7),
+and the dependence localizes to the **protein-family axis, not ligand chemistry**. A family-mean
+predictor alone scores 0.564 — the memorization ceiling.
 
-A single headline correlation hides all of this. FamBench measures the thing that matters for
-a new drug program: **accuracy on protein families you have not seen.**
+**Practical consequence:** on novel families a shallow family-disjoint random forest (0.41) beats
+both billion-parameter co-folders (Nesso 0.32, Boltz 0.31). On a novel post-cutoff target
+(OpenBind EV-A71 2A protease), neither co-folder reliably beats molecular weight (Nesso 0.49, MW
+0.47, Boltz 0.40).
+
+We call this **redundancy-driven inflation / training-familiarity dependence**, not "leakage" —
+reserving that term for demonstrable train/test boundary crossing. FamBench measures the thing
+that matters for a new drug program: **transfer to protein families you have not seen.**
 
 📄 **Paper**: [`paper/fambench.pdf`](paper/) — full experiments, controls, and analysis.
 
@@ -53,7 +60,7 @@ pip install "fambench[hub]"          # + datasets, to pull data from the Hub
 Or from source:
 
 ```bash
-git clone https://github.com/mrnafold/fambench && cd fambench
+git clone https://github.com/DeepBioScientific/fambench && cd fambench
 pip install -e ".[baselines,dev]"
 ```
 
@@ -97,7 +104,7 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
 
 ## Datasets
 
-Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/mrnafold/fambench):
+Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBioScientific/fambench):
 
 - **`redundancy`** — 18,759 PDBbind-derived complexes with `family_size` annotations
   (`in_core` marks a balanced 3,360 quick-eval subset).
@@ -130,6 +137,6 @@ derived from the **OpenBind A71EV2A** release (CC0). Family sizes use MMseqs2 at
 @software{fambench2026,
   title  = {FamBench: Family-Stratified Protein-Ligand Affinity Benchmark},
   year   = {2026},
-  url    = {https://github.com/mrnafold/fambench}
+  url    = {https://github.com/DeepBioScientific/fambench}
 }
 ```

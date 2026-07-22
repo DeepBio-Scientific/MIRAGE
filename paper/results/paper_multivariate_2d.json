@@ -1,0 +1,30 @@
+{
+ "multivariate": {
+  "Nesso-1": {
+   "coef": -0.155,
+   "t": -8.1
+  },
+  "Boltz-2": {
+   "coef": -0.157,
+   "t": -3.7
+  },
+  "controls": "ligand_nn, log protein length, year, family pK variance, measurement type, pK+pK^2"
+ },
+ "grid_nesso": {
+  "novel(1-5)": {
+   "novel-lig": 0.37,
+   "mid-lig": 0.1,
+   "similar-lig": 0.11
+  },
+  "mid(6-80)": {
+   "novel-lig": 0.44,
+   "mid-lig": 0.48,
+   "similar-lig": 0.35
+  },
+  "redundant(81+)": {
+   "novel-lig": 0.51,
+   "mid-lig": 0.53,
+   "similar-lig": 0.48
+  }
+ }
+}

@@ -73,7 +73,7 @@ print(fambench.run_redundancy(my_model).summary())
 print(fambench.run_temporal(my_model).summary())
 ```
 
-See <https://github.com/mrnafold/fambench> for the harness, baselines, and CLI.
+See <https://github.com/DeepBioScientific/fambench> for the harness, baselines, and CLI.
 
 ## Provenance & licensing
 

@@ -34,8 +34,8 @@ dev = ["pytest>=7", "ruff>=0.1"]
 fambench = "fambench.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/mrnafold/fambench"
-Dataset = "https://huggingface.co/datasets/mrnafold/fambench"
+Homepage = "https://github.com/DeepBioScientific/fambench"
+Dataset = "https://huggingface.co/datasets/DeepBioScientific/fambench"
 
 [tool.setuptools]
 packages = ["fambench"]

@@ -12,8 +12,8 @@
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
 
-\title{\textbf{FamBench: Protein--Ligand Affinity Models Are Inflated by\\
-Protein-Family Redundancy}}
+\title{\textbf{FamBench: Affinity Benchmarks Measure Interpolation\\
+Within Familiar Protein Families, Not Transfer to Novel Ones}}
 \author{Mehdi Yazdani Jahromi\\[2pt]\small \texttt{myjahromi@gmail.com}}
 \date{\today}
 
@@ -22,216 +22,214 @@ Protein-Family Redundancy}}
 
 \begin{abstract}
 \noindent
-Co-folding models such as Boltz-2 and Nesso-1 report protein--ligand binding-affinity
-correlations of Pearson $\approx 0.6$ and are increasingly proposed as fast surrogates for
-free-energy perturbation. We show that this headline accuracy is largely an artifact of
-\emph{protein-family redundancy} in the test set. Stratifying $3{,}289$ PDBbind complexes by
-protein-family size (MMseqs2 30\% clusters), we find that both models' accuracy scales
-monotonically with how heavily the family is represented in the PDB: from Pearson
-$\approx 0.10$ on singleton families to $\approx 0.55$--$0.59$ on families with $>300$
-homologs. A leakage-slope regression (absolute error vs.\ $\log_{10}$ family size, controlling
-for the affinity regime) is significantly negative for both co-folders
-($t=-7.5$ and $-4.3$) but \emph{flat} for a random-forest QSAR model and a ligand-$k$NN
-baseline evaluated under family-disjoint cross-validation. On novel families the ranking
-inverts: a shallow, family-disjoint random forest ($r=0.41$) outperforms both
-billion-parameter co-folders ($r=0.32$, $0.31$). On a genuinely novel, post-cutoff target
-(OpenBind EV-A71 2A protease), neither co-folder reliably beats a molecular-weight baseline
-($\rho=0.49$ for Nesso-1, $0.40$ for Boltz-2, vs.\ $0.47$ for molecular weight). We release
-\textbf{FamBench}, a plug-in benchmark and Hugging Face dataset that measures affinity
-accuracy \emph{as a function of protein-family novelty} rather than as a single correlation,
-so that models are judged on the case that matters for a new drug program: a target they have
-not seen.
+Co-folding models such as Boltz-2 and Nesso-1 report protein--ligand affinity correlations of
+Pearson $\approx 0.6$ and are proposed as fast surrogates for free-energy perturbation. We show
+that this headline accuracy is largely \emph{interpolation within protein families already
+represented in public structural data}, not prediction for novel targets. The central result is
+an interaction: frontier co-folders depend strongly on protein-family support while
+family-disjoint shallow controls do not. Defining the \emph{family generalization gap}
+$G_m = r_m(S_f{\ge}301) - r_m(S_f{=}1)$ over matched-affinity strata, we measure
+$G_{\text{Nesso}}=0.45$ (95\% CI $[0.27,0.61]$) and $G_{\text{Boltz}}=0.62$ ($[0.12,1.01]$),
+versus $G_{\text{RF}}=-0.01$ and $G_{\text{kNN}}=-0.03$ (CIs spanning zero) for a random-forest
+QSAR model and a ligand-$k$NN baseline under family-disjoint cross-validation. Family support
+predicts accuracy after controlling for ligand similarity, protein length, publication date,
+family affinity variance, measurement type, and affinity range (Nesso $t=-8.1$; Boltz $t=-3.7$);
+a two-dimensional analysis localizes the dependence to the \emph{protein-family} axis, not ligand
+chemistry. On novel families the practical ranking inverts: a shallow family-disjoint random
+forest ($r=0.41$) beats both co-folders ($0.32$, $0.31$). A prospective, structurally novel
+post-cutoff target (OpenBind EV-A71 2A protease) supplies external confirmation: no co-folder
+reliably exceeds a molecular-weight baseline. We call this effect \emph{redundancy-driven
+inflation} / \emph{training-familiarity dependence} rather than leakage, and release FamBench---a
+plug-in benchmark and dataset that measures accuracy across the full family-support curve, with
+family-disjoint controls and two-level bootstrap inference.
 \end{abstract}
 
 \section{Introduction}
 
-Predicting protein--ligand binding affinity from structure is a central problem in
-computational drug discovery. A recent wave of \emph{co-folding} models---AlphaFold3
-\citep{abramson2024alphafold3}, Boltz-1/2 \citep{wohlwend2024boltz1,passaro2025boltz2},
-Chai-1 \citep{chai2024chai1}, and coarse-grained successors such as Nesso-1
-\citep{valencelabs2026nesso1} and TerraBind \citep{terray2026terrabind}---predict the bound
-complex and, increasingly, the affinity directly. Boltz-2 reports correlations approaching
-free-energy perturbation (FEP) at a fraction of the cost \citep{passaro2025boltz2}, and these
-numbers are driving adoption in hit identification and lead optimization.
+Predicting protein--ligand binding affinity from structure is central to computational drug
+discovery. Co-folding models---AlphaFold3 \citep{abramson2024alphafold3}, Boltz-1/2
+\citep{wohlwend2024boltz1,passaro2025boltz2}, Chai-1 \citep{chai2024chai1}, Nesso-1
+\citep{valencelabs2026nesso1}, TerraBind \citep{terray2026terrabind}---increasingly predict
+affinity directly, with Boltz-2 approaching free-energy-perturbation accuracy
+\citep{passaro2025boltz2}. These models are summarized by a single correlation on a held-out set.
+That number cannot separate a model that has learned binding physics from one that recognizes
+protein families it has seen many times in the PDB. The distinction is decisive: a medicinal
+chemistry program succeeds or fails on \emph{novel} targets---those least represented in public
+structural and affinity data.
 
-Such models are almost always summarized by a \emph{single} correlation between predicted and
-measured affinity on a held-out set. But a single number cannot distinguish a model that has
-learned the physics of binding from one that recognizes protein families it saw many times in
-the Protein Data Bank (PDB). The distinction is not academic: a medicinal chemistry program
-succeeds or fails on \emph{novel} targets, precisely those least represented in public
-structural data.
+Prior work shows ligand-based and docking benchmarks reward memorization
+\citep{wallach2018memorization,chen2019dude}, that affinity networks rely on train--test
+similarity rather than interaction physics \citep{volkov2022frustration,kanakala2023latentbiases},
+and that re-splitting lowers apparent accuracy \citep{li2023leakproof}. What is missing is a
+quantitative, model-agnostic account of how co-folding affinity accuracy depends on
+\emph{protein-family support}, and a benchmark that treats that support as the independent
+variable.
 
-A large literature has documented that ligand-based and docking benchmarks reward memorization
-\citep{wallach2018memorization,chen2019dude}, that affinity networks trained on PDBbind rely on
-train--test similarity rather than interaction physics
-\citep{volkov2022frustration,kanakala2023latentbiases}, and that re-splitting the data to
-remove leakage lowers apparent accuracy \citep{li2023leakproof}. What is missing is a
-\emph{quantitative, model-agnostic account} of how co-folding affinity accuracy depends on the
-one axis that matters most for prospective use---\emph{protein-family novelty}---and a
-benchmark that measures it directly.
+\paragraph{Central claim.} Standard affinity benchmarks largely measure interpolation within
+protein families already represented in public structural and affinity data. FamBench measures
+transfer to unseen protein families. Under matched affinity distributions and family-disjoint
+controls, Nesso-1 and Boltz-2 improve sharply with family redundancy but collapse on singleton
+families, where a shallow random forest performs better. A prospective OpenBind target confirms
+that current co-folders may fail to reliably exceed simple physicochemical baselines.
 
-We make three contributions.
+\paragraph{Contributions.}
 \begin{enumerate}\itemsep2pt
-  \item \textbf{We show co-folding affinity accuracy is a redundancy artifact.} On a matched
-  set of $3{,}289$ PDBbind complexes, Boltz-2 and Nesso-1 accuracy rises monotonically with
-  protein-family size, collapsing toward zero on singleton families
-  (Sec.~\ref{sec:redundancy}, Fig.~\ref{fig:dose}).
-  \item \textbf{We isolate the mechanism with controls.} A random-forest QSAR model and a
-  ligand-$k$NN baseline, evaluated under \emph{family-disjoint} cross-validation, show no such
-  gradient; on novel families they \emph{outperform} the co-folders (Sec.~\ref{sec:controls}).
-  On a genuinely novel post-cutoff target, neither co-folder beats molecular weight
-  (Sec.~\ref{sec:temporal}).
-  \item \textbf{We release FamBench}, a plug-in Python/CLI benchmark and Hugging Face dataset
-  with confound-guarded metrics, so any affinity model can be scored on its family-novelty
-  curve in a few lines (Sec.~\ref{sec:artifact}).
+  \item \textbf{A model-class $\times$ family-support interaction.} We define the family
+  generalization gap $G_m$ and show it is large and significant for co-folders and
+  indistinguishable from zero for family-disjoint controls (Sec.~\ref{sec:gap}).
+  \item \textbf{Familiarity dependence, controlled.} Pre-cutoff family support predicts accuracy
+  after ligand similarity, protein length, date, family affinity variance, measurement type, and
+  affinity range; the dependence localizes to the protein-family axis, not ligand chemistry
+  (Sec.~\ref{sec:controls}). A family-mean predictor recovers most of the ``accuracy'' from family
+  identity alone.
+  \item \textbf{Practical and prospective consequences.} On novel families the ranking inverts;
+  on a novel post-cutoff target neither co-folder beats molecular weight (Secs.~\ref{sec:novel},
+  \ref{sec:temporal}).
+  \item \textbf{FamBench}, a plug-in benchmark and dataset with a two-dimensional
+  (family-support $\times$ ligand-similarity) design, family-disjoint controls, and a two-level
+  bootstrap reporting protocol (Sec.~\ref{sec:design}).
 \end{enumerate}
 
 \section{Related Work}
 
-\paragraph{Co-folding affinity models.}
-The AlphaFold2 breakthrough \citep{jumper2021alphafold2} was extended to protein--ligand
-complexes by AlphaFold3 \citep{abramson2024alphafold3} and open reimplementations such as
-Boltz-1 \citep{wohlwend2024boltz1}, Chai-1 \citep{chai2024chai1}, and RoseTTAFold-All-Atom
-\citep{krishna2024rfaa}. A second generation targets affinity directly: Boltz-2
-\citep{passaro2025boltz2} is, to our knowledge, the first co-folder to approach FEP accuracy,
-and Nesso-1 \citep{valencelabs2026nesso1} and TerraBind \citep{terray2026terrabind} follow with
-faster coarse-grained representations. They are evaluated by overall correlation, inviting the
-generalization questions that have long dogged scoring functions.
+\paragraph{Co-folding affinity models.} AlphaFold2 \citep{jumper2021alphafold2} was extended to
+protein--ligand complexes by AlphaFold3 \citep{abramson2024alphafold3} and open reimplementations
+Boltz-1 \citep{wohlwend2024boltz1}, Chai-1 \citep{chai2024chai1}, RoseTTAFold-All-Atom
+\citep{krishna2024rfaa}. Boltz-2 \citep{passaro2025boltz2}, Nesso-1 \citep{valencelabs2026nesso1},
+and TerraBind \citep{terray2026terrabind} predict affinity directly, evaluated by overall
+correlation.
 
-\paragraph{Scoring and QSAR baselines.}
-Empirical (AutoDock Vina \citep{trott2010vina}, smina \citep{koes2013smina}) and machine-learned
-(RF-Score \citep{ballester2010rfscore}, Gnina \citep{mcnutt2021gnina}, AEV-PLIG
-\citep{valsson2025aevplig}) scoring functions established learning affinity from structure.
-Nearly all are trained and tested on PDBbind \citep{liu2017pdbbind} and CASF-2016
-\citep{su2019casf}, with labels from BindingDB \citep{gilson2016bindingdb} and ChEMBL
-\citep{mendez2019chembl}, against the FEP+ reference \citep{wang2015fep}.
+\paragraph{Scoring and QSAR baselines.} Empirical (Vina \citep{trott2010vina}, smina
+\citep{koes2013smina}) and learned (RF-Score \citep{ballester2010rfscore}, Gnina
+\citep{mcnutt2021gnina}, AEV-PLIG \citep{valsson2025aevplig}) functions are trained and tested on
+PDBbind \citep{liu2017pdbbind} / CASF-2016 \citep{su2019casf}, with labels from BindingDB
+\citep{gilson2016bindingdb} and ChEMBL \citep{mendez2019chembl}, against FEP+
+\citep{wang2015fep}.
 
-\paragraph{Leakage and benchmark critiques.}
-Wallach and Heifets \citep{wallach2018memorization} showed most ligand-based benchmarks reward
-memorization, and Chen et al.\ \citep{chen2019dude} traced deep-learning ``success'' on DUD-E to
-dataset bias. For affinity, Volkov et al.\ \citep{volkov2022frustration} found ligand-only and
-protein-only models match full-complex models, and nearest-training-neighbor baselines are
-already strong---evidence of memorization. Kanakala et al.\ \citep{kanakala2023latentbiases}
-confirmed latent biases in popular sets. The community response has been to re-split:
-Leak-Proof PDBBind \citep{li2023leakproof} removes cross-contamination and shows retrained
-models generalize better; curated resources such as MISATO \citep{siebenmorgen2024misato} follow
-suit.
+\paragraph{Memorization and benchmark critiques.} Wallach and Heifets
+\citep{wallach2018memorization} and Chen et al.\ \citep{chen2019dude} traced ligand-based/docking
+``success'' to dataset bias; Volkov et al.\ \citep{volkov2022frustration} found ligand-only and
+protein-only models match full-complex models and nearest-neighbor baselines are already strong.
+Kanakala et al.\ \citep{kanakala2023latentbiases} documented latent biases; MISATO
+\citep{siebenmorgen2024misato} re-curated data.
 
-\paragraph{Time-split and out-of-distribution evaluation.}
-Sheridan \citep{sheridan2013timesplit} argued that time-split, not random split, estimates
-prospective accuracy. The most stringent test is a target released after a model's training
-cutoff; the OpenBind EV-A71 2A protease release \citep{openbind2026dataset} provides exactly such
-a post-2021 target, free of PDBbind contamination.
+\paragraph{Positioning against recent split-aware benchmarks.} FamBench differs from three recent
+efforts by making \emph{protein-family support} the primary axis on \emph{frozen frontier
+co-folders}. Runs N' Poses \citep{runsnposes2025} studies pose recovery versus training
+similarity; FamBench studies affinity versus family support. NTAB \citep{ntab2025} stratifies
+post-cutoff ChEMBL assays by \emph{ligand} similarity; FamBench makes protein-family familiarity
+the main axis while controlling ligand novelty. Leak-Proof PDBBind \citep{li2023leakproof}
+constructs protected splits and \emph{retrains} conventional scoring functions; FamBench audits
+frozen frontier co-folders across the full family-support curve and adds prospective evaluation.
+Nesso-1 \citep{valencelabs2026nesso1} reports chemical-similarity analyses but explicitly lacks a
+disclosed target sequence/structure-similarity analysis; FamBench fills that missing evaluation.
+Sheridan \citep{sheridan2013timesplit} motivates the time-split view our OpenBind arm adopts.
 
-\paragraph{Our contribution.} Prior work establishes that benchmarks reward memorization and
-that re-splitting mitigates it. Unlike LP-PDBBind \citep{li2023leakproof}, which fixes a split
-and reports one aggregate number, we treat \emph{redundancy as the independent variable} and
-expose the accuracy-versus-novelty curve directly, for the newest class of models (co-folders)
-that no prior leakage study covers.
+\section{Definitions}
+\label{sec:gap}
+
+\paragraph{Family support.} For a target in family $f$ we define the pre-cutoff support
+$S_f$ as the number of PDBbind structures in the same MMseqs2 \citep{steinegger2017mmseqs2} 30\%
+sequence-identity cluster. Because our evaluation complexes are all deposited before the models'
+2021-09-30 training cutoff, $S_f$ is a count of structures the models could have seen for that
+family. We bin $S_f$ into $\{1, 2\text{--}5, 6\text{--}20, 21\text{--}80, 81\text{--}300, 301+\}$.
+
+\paragraph{Matched strata.} Within each family-support bin we compute Pearson $r$ between
+predicted and measured affinity over a \emph{matched} $\mathrm{p}K$ window $[4.5, 8.0]$, holding
+the label spread (and thus attainable correlation) approximately constant across bins.
+
+\paragraph{Family generalization gap.}
+\begin{equation}
+G_m \;=\; r_m(S_f \ge 301) \;-\; r_m(S_f = 1),
+\end{equation}
+the change in accuracy from singleton to well-supported families. A positive $G_m$ means accuracy
+is bought by family support. We estimate $G_m$ with a \emph{two-level bootstrap}: resample
+families with replacement, then resample ligands within each family, so the confidence interval
+reflects both family-level and ligand-level variability.
+
+\paragraph{Controls.} The honest counterpart to a frozen co-folder---whose test families are in
+its training window---is a model that \emph{cannot} have seen the test family. We evaluate a
+random-forest QSAR model (RF-QSAR) and a ligand-$k$NN baseline under 5-fold \emph{family-disjoint}
+cross-validation (\texttt{GroupKFold} on family id), so every prediction is on a held-out family.
 
 \section{The FamBench Benchmark}
-\label{sec:artifact}
+\label{sec:design}
 
-FamBench comprises two evaluation sets and a set of confound-guarded metrics.
+\paragraph{Redundancy set.} $18{,}759$ PDBbind-derived complexes with an exact $K_d/K_i/$IC$_{50}$
+label ($\mathrm{p}K$), each annotated with protein-family support $S_f$ and ligand
+nearest-neighbor ECFP4 Tanimoto. A balanced $3{,}360$-target ``core'' subset (560 per support bin)
+is provided for quick evaluation.
 
-\paragraph{Redundancy set.} $18{,}759$ protein--ligand complexes derived from PDBbind
-\citep{liu2017pdbbind} with an exact ($=$) $K_d$, $K_i$, or IC$_{50}$ label converted to
-$\mathrm{p}K=-\log_{10}(\text{conc})$. For each complex we record the protein sequence, ligand
-SMILES, and---critically---the \emph{protein-family size}: the number of complexes in the same
-MMseqs2 \citep{steinegger2017mmseqs2} cluster at 30\% identity / 80\% coverage. Family sizes
-range from $1$ (890 singletons) to $809$, over $2{,}203$ families. We define six redundancy
-bins ($1$, $2$--$5$, $6$--$20$, $21$--$80$, $81$--$300$, $301+$) and a balanced
-``core'' subset of $3{,}360$ complexes (560 per bin) for quick evaluation. A ligand
-nearest-neighbor Tanimoto (ECFP4) is also recorded as a secondary novelty axis.
+\paragraph{Temporal set.} $649$ compounds with measured $K_d$ against one structurally novel,
+post-2021 target---the OpenBind EV-A71 2A protease \citep{openbind2026dataset} (CC0)---with
+molecular-weight, clogp, Gnina, smina, AEV-PLIG, and AQ-Affinity baselines shipped.
 
-\paragraph{Temporal set.} $649$ compounds with measured $K_d$ against a single, structurally
-novel, post-2021 target: the Enterovirus~A71 2A protease from the OpenBind consortium release
-\citep{openbind2026dataset} (CC0). Because the target post-dates the 2021-09-30 training cutoff
-of the models we evaluate, it is a genuine out-of-distribution test. We ship the consortium's
-molecular-weight, clogp, Gnina, smina, AEV-PLIG, and AQ-Affinity predictions as baselines.
+\paragraph{Two-dimensional design.} FamBench stratifies by \emph{protein-family support
+$\times$ ligand similarity}, separating two memorization channels: co-folders may exploit
+protein-family familiarity while ligand models may exploit chemical similarity. Matching affinity
+distributions alone does not isolate these channels.
 
-\paragraph{Metrics.} The primary quantity is not a single correlation but its dependence on
-family size. For each redundancy bin we report Pearson $r$ between predicted and measured
-affinity within a \emph{matched} $\mathrm{p}K$ window $[4.5, 8.0]$, which holds the label
-spread (and therefore the maximum attainable correlation) approximately constant across bins.
-We summarize the whole curve with two headline numbers:
-\begin{itemize}\itemsep1pt
-  \item \textbf{Novel-family Pearson}: accuracy on families of size $\leq 5$ (the number a model
-  should report for a new target).
-  \item \textbf{Leakage slope}: the coefficient of $\log_{10}(\text{family size})$ in an ordinary
-  least-squares regression of absolute error on family size, the affinity regime ($\mathrm{p}K$,
-  $\mathrm{p}K^2$), and affinity type. A significantly negative slope means accuracy is
-  \emph{bought by redundancy}.
-\end{itemize}
-Per-bin confidence intervals are non-parametric bootstrap ($2{,}000$ resamples). On the temporal
-set we report within-target Spearman $\rho$ and the residual $\rho$ after linearly removing
-molecular weight, which quantifies signal \emph{beyond} ligand size.
+\paragraph{Reporting protocol.} We recommend: equal-family weighting (not per-complex);
+mean within-stratum correlation rather than pooled-across-target correlation; Pearson, Spearman,
+centered RMSE, and pairwise ranking accuracy; a two-level (family then ligand) bootstrap;
+sensitivity to the clustering choice; and a baseline suite---family-mean (target identity),
+molecular weight, clogp, ligand-$k$NN, and RF-QSAR. The prospective OpenBind score is reported as
+\emph{one external target}, not population-level proof.
 
 \section{Experimental Setup}
 
-We evaluate six methods spanning three families. \textbf{Co-folders:} Boltz-2
-\citep{passaro2025boltz2} (with cuEquivariance kernels and ColabFold MSAs) and Nesso-1
-\citep{valencelabs2026nesso1} (ESM-2 embeddings \citep{rives2021esm}), both run from public
-weights with their default settings; both output $\log_{10}(\text{IC}_{50})$, which we negate to
-the FamBench ``higher-is-stronger'' convention. \textbf{Shallow learned baselines:} a
-random-forest QSAR model (RF-QSAR) on ECFP4 (1024 bit) plus amino-acid composition, and a
-ligand-$k$NN memorization baseline ($k{=}5$, ECFP4 Tanimoto). Both are evaluated under
-\emph{5-fold family-disjoint} (\texttt{GroupKFold} on family id) cross-validation, so their
-predictions are always on held-out families---the honest counterpart to the co-folders, whose
-test families \emph{are} present in their PDB training data. \textbf{Trivial baselines:}
-molecular weight and clogp. All methods are scored on the same $3{,}289$-complex intersection
-(Boltz-2 on a $578$-complex subset owing to its higher per-target cost).
+We evaluate models in four classes. \textbf{Affinity co-folders:} Boltz-2
+\citep{passaro2025boltz2} (cuEquivariance kernels, ColabFold MSAs) and Nesso-1
+\citep{valencelabs2026nesso1} (ESM-2 embeddings \citep{rives2021esm}), from public weights at
+default settings; both output $\log_{10}(\text{IC}_{50})$, negated to a higher-is-stronger score.
+\textbf{Confidence-proxy co-folders:} Chai-1 \citep{chai2024chai1} and ESMFold2, which predict
+structure and an interface confidence (ipTM) but \emph{not} affinity; we score their ipTM as a
+proxy, clearly labeled. \textbf{Family-disjoint controls:} RF-QSAR (ECFP4 $+$ amino-acid
+composition) and ligand-$k$NN, both under family-disjoint CV. \textbf{Trivial/identity baselines:}
+family-mean, molecular weight, clogp. AlphaFold3 has open code but request-only weights and no
+affinity head; it is provided as a pluggable stub, not evaluated.
 
 \section{Results}
 
-\subsection{Co-folding accuracy scales with protein-family redundancy}
-\label{sec:redundancy}
+\subsection{A model-class $\times$ family-support interaction}
+\label{sec:interaction}
 
-Table~\ref{tab:main} reports overall, novel-family, and redundant-family accuracy, together
-with the leakage slope. Overall, the co-folders lead (Nesso-1 $r=0.588$), consistent with their
-published numbers. But that lead is concentrated on redundant families: Nesso-1 reaches
-$r=0.599$ on families with $\geq 81$ homologs and only $r=0.324$ on families of size $\leq 5$.
-Boltz-2 shows the same pattern more sharply ($0.429$ vs.\ $0.308$).
+Table~\ref{tab:gap} reports the family generalization gap. The affinity co-folders have large,
+significant gaps ($G_{\text{Nesso}}=0.45$, $G_{\text{Boltz}}=0.62$; two-level bootstrap CIs exclude
+zero), while every family-disjoint and trivial control has $G \approx 0$ with a CI spanning zero.
+This is the central finding: the shallow controls are not weaker co-folders---they behave
+\emph{differently} as family support changes. The full dose-response (Table~\ref{tab:dose},
+Fig.~\ref{fig:dose}) shows the co-folders rising monotonically with support while the controls
+stay flat.
 
 \begin{table}[t]
-\centering
-\small
-\caption{Affinity accuracy on the $3{,}289$-complex matched set. Overall and per-stratum Pearson
-$r$; the \emph{leakage slope} is the coefficient (with $t$-statistic) of
-$\log_{10}(\text{family size})$ in the absolute-error regression. Co-folders have a large,
-significant negative slope; family-disjoint and trivial baselines do not. Boltz-2 is scored on a
-$578$-complex subset.}
-\label{tab:main}
+\centering\small
+\caption{Family generalization gap $G_m = r(S_f{\ge}301)-r(S_f{=}1)$ (matched-$\mathrm{p}K$,
+two-level bootstrap 95\% CI). Co-folders depend strongly on family support; family-disjoint and
+trivial controls do not.}
+\label{tab:gap}
 \begin{tabular}{lccccc}
 \toprule
-Method & Type & Overall $r$ & Novel-fam.\ $r$ & Redund.-fam.\ $r$ & Leakage slope ($t$) \\
+Method & Class & $r(S_f{=}1)$ & $r(S_f{\ge}301)$ & $G_m$ & 95\% CI \\
 \midrule
-Nesso-1     & co-folder            & \textbf{0.588} & 0.324 & \textbf{0.599} & $-0.109\ (-7.5)$ \\
-Boltz-2     & co-folder            & 0.467 & 0.308 & 0.429 & $-0.139\ (-4.3)$ \\
-RF-QSAR     & family-disjoint ML   & 0.479 & \textbf{0.411} & 0.320 & $+0.008\ (+0.6)$ \\
-ligand-$k$NN& family-disjoint ML   & 0.407 & 0.350 & 0.374 & $-0.002\ (-0.1)$ \\
-clogp       & trivial              & 0.284 & 0.121 & 0.234 & $+0.010\ (+1.0)$ \\
-mol.\ weight& trivial              & 0.069 & 0.119 & 0.184 & $+0.017\ (+2.0)$ \\
+Nesso-1      & affinity co-folder   & 0.11  & 0.55 & \textbf{+0.45} & $[+0.27,+0.61]$ \\
+Boltz-2      & affinity co-folder   & $-0.03$ & 0.59 & \textbf{+0.62} & $[+0.12,+1.01]$ \\
+RF-QSAR      & family-disjoint ML   & 0.24  & 0.23 & $-0.01$ & $[-0.16,+0.16]$ \\
+ligand-$k$NN & family-disjoint ML   & 0.24  & 0.21 & $-0.03$ & $[-0.17,+0.11]$ \\
+clogp        & trivial              & 0.10  & 0.24 & $+0.15$ & $[-0.00,+0.28]$ \\
+mol.\ weight & trivial              & 0.02  & 0.01 & $-0.01$ & $[-0.15,+0.15]$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The matched-$\mathrm{p}K$ dose-response (Table~\ref{tab:dose}, Fig.~\ref{fig:dose}) makes the
-effect unambiguous. With label spread held constant across bins, Nesso-1 rises from $r=0.105$ on
-singletons to $0.551$ on the largest families; Boltz-2 is statistically \emph{zero} on all
-families of size $\leq 20$ ($r=-0.03$ to $-0.01$) and only acquires signal above $21$ homologs.
-Because the window pins the attainable correlation, this gradient cannot be explained by
-narrower affinity ranges in small families.
-
 \begin{table}[t]
-\centering
-\small
-\caption{Matched-$\mathrm{p}K$ Pearson $r$ by protein-family size. The co-folders rise steeply
-with redundancy; the family-disjoint baselines are flat. ($n\approx 350$ per Nesso-1 bin.)}
+\centering\small
+\caption{Matched-$\mathrm{p}K$ Pearson $r$ by family support. Co-folders rise steeply; controls
+are flat.}
 \label{tab:dose}
 \begin{tabular}{lcccccc}
 \toprule
-Method & \multicolumn{6}{c}{protein-family size} \\
+Method & \multicolumn{6}{c}{protein-family support $S_f$} \\
 \cmidrule(lr){2-7}
  & 1 & 2--5 & 6--20 & 21--80 & 81--300 & 301+ \\
 \midrule
@@ -247,60 +245,104 @@ mol.\ weight & $-0.032$ & 0.009 & $-0.101$ & 0.107 & 0.070 & $-0.010$ \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.68\linewidth]{figures/fig1_dose_response.pdf}
-\caption{Affinity accuracy versus protein-family redundancy (matched-$\mathrm{p}K$ window,
-bootstrap 95\% CIs). Co-folders (Nesso-1, Boltz-2) rise steeply with family size; a
-family-disjoint random forest and ligand-$k$NN are flat. The co-folders' apparent superiority
-is confined to redundant families.}
+\caption{Affinity accuracy versus protein-family support (matched-$\mathrm{p}K$, bootstrap 95\%
+CIs). Co-folders rise steeply; family-disjoint RF and ligand-$k$NN are flat.}
 \label{fig:dose}
 \end{figure}
 
-\subsection{Controls isolate leakage as the mechanism}
+\subsection{Familiarity dependence, isolated by controls}
 \label{sec:controls}
 
-The two shallow baselines are the diagnostic. Evaluated under family-disjoint
-cross-validation---so they can never have ``seen'' the test family---RF-QSAR and ligand-$k$NN
-have leakage slopes indistinguishable from zero ($t=+0.6$ and $-0.1$; Fig.~\ref{fig:slope}) and
-flat dose-response curves (Table~\ref{tab:dose}). The gradient is therefore not an intrinsic
-property of ``harder'' novel targets (which would penalize every method equally); it appears
-\emph{only} for models whose training data contains the test families. When family leakage is
-removed by construction, the gradient vanishes.
+\paragraph{It survives every covariate.} Regressing per-target absolute error on
+$\log_{10} S_f$ together with ligand similarity, protein length, publication year, family affinity
+variance, measurement type, and the affinity regime ($\mathrm{p}K,\mathrm{p}K^2$), the family-
+support coefficient remains large and significant: Nesso $-0.155$ ($t=-8.1$), Boltz $-0.157$
+($t=-3.7$). The dependence is not explained by any measured confound.
 
-The practical consequence is a rank inversion (Fig.~\ref{fig:novel}). On novel families
-(size $\leq 5$), the family-disjoint random forest ($r=0.411$) \emph{outperforms} both
-co-folders (Nesso-1 $0.324$, Boltz-2 $0.308$), and even ligand-$k$NN ($0.350$) is competitive. A
-model with $10^3$ parameters and no structure beats billion-parameter co-folders on exactly the
-regime that matters for a new target.
+\paragraph{The channel is protein-family, not ligand chemistry.} Table~\ref{tab:2d} stratifies
+Nesso-1 accuracy by family support $\times$ ligand similarity. Accuracy climbs down the family
+axis ($0.1 \to 0.5$) but is flat across the ligand axis. The memorization channel for co-folders
+is protein-family familiarity.
+
+\begin{table}[t]
+\centering\small
+\caption{Nesso-1 Pearson $r$ by protein-family support $\times$ ligand similarity
+(matched-$\mathrm{p}K$; $n$ in parentheses). The gradient runs along the family axis, not the
+ligand axis.}
+\label{tab:2d}
+\begin{tabular}{lccc}
+\toprule
+family support $\backslash$ ligand & novel ligand & mid & similar ligand \\
+\midrule
+novel (1--5)     & $+0.37$ (170) & $+0.10$ (228) & $+0.11$ (325) \\
+mid (6--80)      & $+0.44$ (134) & $+0.48$ (253) & $+0.35$ (353) \\
+redundant (81+)  & $+0.51$ (152) & $+0.53$ (270) & $+0.48$ (262) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Family identity alone recovers most of the ``accuracy.''} A predictor that outputs the
+mean $\mathrm{p}K$ of the target's family scores Pearson $\mathbf{0.564}$ under random splitting
+(and $0$ under family-disjoint splitting by construction)---close to the co-folders' pooled $0.588$.
+This memorization ceiling is corroborated by a modality ablation (Table~\ref{tab:modality},
+Fig.~\ref{fig:modality}): a model given \emph{only the protein}, blind to the ligand and so unable
+in principle to know the affinity, still reaches $r=0.64$ (composition) or $0.65$ (ESM-2 650M)
+under random splitting, collapsing to $0.25$--$0.33$ under family-disjoint splitting.
+
+\begin{table}[t]
+\centering\small
+\caption{Modality ablation and identity baseline (random forest; Pearson $r$). A protein-only
+model---blind to the ligand---nearly matches the full model under random splitting but collapses
+under family-disjoint splitting.}
+\label{tab:modality}
+\begin{tabular}{lccc}
+\toprule
+Features & Random split & Family-disjoint split & Gap \\
+\midrule
+family-mean (identity)       & 0.564 & $\approx 0$ & --- \\
+ligand only (ECFP4)          & 0.676 & 0.503 & 0.17 \\
+protein only (composition)   & 0.637 & 0.248 & \textbf{0.39} \\
+protein only (ESM-2 650M)    & 0.653 & 0.330 & 0.32 \\
+full (ligand $+$ protein)    & 0.740 & 0.456 & 0.28 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.49\linewidth]{figures/fig2_novel_vs_redundant.pdf}\hfill
-\includegraphics[width=0.49\linewidth]{figures/fig3_leakage_slope.pdf}
-\caption{\textbf{Left:} novel- vs.\ redundant-family Pearson $r$. The co-folders' advantage is
-entirely on redundant families; on novel families the ranking inverts. \textbf{Right:} leakage
-slope (change in $|$error$|$ per decade of family size). Only the co-folders are significantly
-redundancy-dependent ($|t|>2$, red).}
-\label{fig:slope}
-\label{fig:novel}
+\includegraphics[width=0.49\linewidth]{figures/fig5_modality.pdf}
+\caption{\textbf{Left:} novel- vs.\ redundant-family Pearson $r$; the co-folders' advantage is
+confined to redundant families. \textbf{Right:} random-split accuracy is protein-family
+memorization---a protein-only model collapses under family-disjoint splitting.}
+\label{fig:modality}
 \end{figure}
 
-\subsection{On a novel target, co-folders do not beat molecular weight}
+\subsection{On novel families the ranking inverts}
+\label{sec:novel}
+
+The practical consequence is a rank inversion. On novel families ($S_f \le 5$), the family-disjoint
+random forest ($r=0.411$) \emph{outperforms} both co-folders (Nesso $0.324$, Boltz $0.308$), and
+ligand-$k$NN ($0.350$) is competitive. A $10^3$-parameter model with no structure beats
+billion-parameter co-folders on exactly the regime that matters for a new target.
+
+\subsection{Prospective confirmation on a novel target}
 \label{sec:temporal}
 
-The temporal set removes any ambiguity about ``family size'' as a proxy: the EV-A71 2A protease
-post-dates the models' training cutoff and shares no family with PDBbind at the evaluation
-threshold. Table~\ref{tab:temporal} reports within-target Spearman $\rho$ over $643$ compounds.
-Molecular weight alone achieves $\rho=0.469$. Nesso-1 barely exceeds it ($0.486$); Boltz-2
-\emph{underperforms} it ($0.395$), as do Gnina, smina, AEV-PLIG, AQ-Affinity, and clogp. After
-residualizing on molecular weight, Nesso-1 retains a modest $\rho=0.233$ of genuine signal and
-Boltz-2 only $0.112$; the docking and other ML scorers retain essentially none. On a target no
-model has seen, sophisticated affinity prediction collapses to ligand size.
+The temporal set removes ``family support'' as a proxy: the EV-A71 2A protease post-dates the
+training cutoff. Table~\ref{tab:temporal} reports within-target Spearman over $643$ compounds.
+Molecular weight achieves $\rho=0.469$; Nesso-1 barely exceeds it ($0.486$) and Boltz-2
+underperforms it ($0.395$), as do Gnina, smina, AEV-PLIG, and AQ-Affinity. This is consistent with
+external caution: Nesso-1's own report states its advantage over molecular weight on this target is
+not statistically convincing and that target sequence/structure similarity is unevaluated in its
+proprietary assays \citep{valencelabs2026nesso1}, and the OpenBind release itself flags molecular
+weight as a strong baseline for this campaign \citep{openbind2026dataset}. We report this as one
+external target, not population-level proof.
 
 \begin{table}[t]
-\centering
-\small
-\caption{Novel-target ranking (OpenBind EV-A71 2A protease, $643$ compounds). Spearman $\rho$
-with experiment, and $\rho$ after removing molecular weight. No method reliably beats the
-molecular-weight baseline.}
+\centering\small
+\caption{Novel-target ranking (OpenBind EV-A71 2A protease, $643$ compounds). Spearman $\rho$, and
+$\rho$ after removing molecular weight.}
 \label{tab:temporal}
 \begin{tabular}{lcc}
 \toprule
@@ -318,62 +360,58 @@ AQ-Affinity        & 0.134 & $-0.019$ \\
 \end{tabular}
 \end{table}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.62\linewidth]{figures/fig4_temporal.pdf}
-\caption{Within-target Spearman $\rho$ on the novel OpenBind target. The dashed line is the
-molecular-weight baseline; only Nesso-1 marginally exceeds it.}
-\label{fig:temporal}
-\end{figure}
+\subsection{Confidence-proxy co-folders}
+\label{sec:proxy}
+
+Chai-1 and ESMFold2 predict structure and an interface confidence, not affinity. Scoring their
+ipTM as an affinity proxy, the signal is weak---ESMFold2 reaches overall Pearson $0.21$
+(novel-family $0.17$; $n{=}237$ folds via the hosted API)---well below the affinity-head models.
+This indicates the affinity heads in Nesso-1/Boltz-2 add real signal over raw structural
+confidence; that signal is, however, exactly what depends on family support. AlphaFold3 would
+enter this category but its weights are request-only.
 
 \section{Discussion}
 
-Three findings cohere into a single message. First, co-folding affinity accuracy is a
-\emph{monotone function of protein-family redundancy}, not a fixed property of the model.
-Second, the effect is specifically \emph{leakage}: matched controls that cannot memorize the
-family show no gradient, and on novel families they win. Third, the endpoint of the
-gradient---a genuinely novel target---is a regime where the state of the art does not beat
-molecular weight.
+\paragraph{Why not ``leakage.''} Our evidence establishes \emph{training-familiarity dependence}
+and \emph{redundancy-driven inflation}: accuracy scales with pre-cutoff family support after
+controlling for confounds, and matched family-disjoint models do not share the dependence. We
+deliberately avoid the word ``leakage,'' which should be reserved for evaluations where related
+families demonstrably occur across a claimed train/test boundary. We cannot reconstruct the exact
+proprietary affinity training sets of the co-folders, so we make the weaker, defensible claim:
+public affinity benchmarks are dominated by families the models are familiar with, and that
+familiarity---not binding physics---carries most of the reported correlation.
 
-This does not imply co-folders are useless; on well-populated families they are the most
-accurate methods we tested. It implies that the standard practice of reporting a single overall
-correlation \emph{systematically overstates prospective accuracy}, because public test sets are
-dominated by redundant families. A reader who sees ``Pearson $0.6$'' should ask ``on which
-families?''---the honest number for a new target is closer to $0.1$--$0.3$. Our controls also
-suggest a cheap, strong prospective baseline that is rarely reported: a family-disjoint QSAR
-model.
+\paragraph{Consequences.} Co-folders are the most accurate methods on well-supported families;
+the problem is the standard practice of reporting one overall correlation, which conflates
+interpolation within familiar families with transfer to novel ones. The honest number for a new
+target is the novel-family value ($\approx 0.1$--$0.3$), and a cheap family-disjoint QSAR is a
+strong, rarely-reported prospective baseline.
 
-\paragraph{Limitations.} The redundancy set is derived from PDBbind and is therefore
-pre-cutoff; its leakage is redundancy-based, and we use family size as a proxy for training
-representation. The temporal set removes this proxy but is a single target with a congeneric
-compound series, so its absolute numbers should not be over-generalized. We evaluate public
-weights at default settings and do not retrain the co-folders on de-leaked data; whether
-retraining closes the gap (as for classical scorers \citep{li2023leakproof}) is open. Finally,
-family size at 30\% identity is one redundancy axis; ligand-scaffold redundancy is a
-complementary axis we record but do not analyze here.
+\paragraph{Limitations.} The redundancy set is pre-cutoff PDBbind; $S_f$ is a within-corpus
+support proxy, not the models' exact training counts. The temporal set is a single target with a
+congeneric series. We evaluate frozen public weights and do not retrain on de-leaked data. Family
+support at 30\% identity is one axis; Pfam- and pocket-based clustering are natural sensitivity
+analyses. The confidence-proxy results use ipTM, not a trained affinity head.
 
 \section{Reproducibility and Artifact}
 
-FamBench is released as an installable package (\texttt{pip install fambench}) with a Hugging
-Face dataset. Scoring a model requires wrapping it as
-\texttt{predict(sequence, smiles)\,$\to$\,float} and calling \texttt{run\_redundancy} and
-\texttt{run\_temporal}; a language-agnostic CLI (\texttt{fambench score}) scores a predictions
-CSV. All metrics, confound guards (matched-$\mathrm{p}K$ windows, leakage-slope regression,
-bootstrap CIs), baselines, and the dataset-construction pipeline are included. Every number in
-this paper is reproduced by the shipped harness from the released predictions.
+FamBench is an installable package (\texttt{pip install fambench}) with a Hugging Face dataset.
+Scoring a model requires wrapping it as \texttt{predict(sequence, smiles)$\to$float} and calling
+\texttt{run\_redundancy} / \texttt{run\_temporal}; a CLI scores a predictions CSV. All metrics,
+controls ($G_m$, matched-$\mathrm{p}K$, multivariate regression, two-level bootstrap), baselines,
+and the dataset pipeline are included; every number here is reproduced by the shipped harness from
+released predictions.
 
 \section{Conclusion}
 
-Binding-affinity leaderboards for co-folding models measure the wrong thing: accuracy on
-protein families the model has already seen. FamBench re-centers evaluation on
-protein-family novelty, exposes a steep redundancy gradient in Boltz-2 and Nesso-1, and shows
-that on a novel target neither beats molecular weight. We hope reporting the novel-family
-number and the leakage slope---rather than a single correlation---becomes standard practice for
-the next generation of affinity models.
+Standard affinity benchmarks largely measure interpolation within familiar protein families.
+FamBench re-centers evaluation on transfer to unseen families: the family generalization gap
+separates frontier co-folders (large, positive) from family-disjoint controls (zero), a
+prospective novel target confirms neither co-folder reliably beats molecular weight, and the fix
+is to report the gap and the novel-family number rather than a single correlation.
 
-\paragraph{Data and code availability.}
-Benchmark, code, and figures: \url{https://github.com/mrnafold/fambench}.
-Dataset: \url{https://huggingface.co/datasets/mrnafold/fambench}.
+\paragraph{Data and code.} \url{https://github.com/DeepBioScientific/fambench};
+\url{https://huggingface.co/datasets/DeepBioScientific/fambench}.
 
 {\small
 \bibliographystyle{unsrtnat}
