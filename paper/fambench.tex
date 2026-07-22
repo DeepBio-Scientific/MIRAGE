@@ -363,12 +363,30 @@ AQ-Affinity        & 0.134 & $-0.019$ \\
 \subsection{Confidence-proxy co-folders}
 \label{sec:proxy}
 
-Chai-1 and ESMFold2 predict structure and an interface confidence, not affinity. Scoring their
-ipTM as an affinity proxy, the signal is weak---ESMFold2 reaches overall Pearson $0.21$
-(novel-family $0.17$; $n{=}237$ folds via the hosted API)---well below the affinity-head models.
-This indicates the affinity heads in Nesso-1/Boltz-2 add real signal over raw structural
-confidence; that signal is, however, exactly what depends on family support. AlphaFold3 would
-enter this category but its weights are request-only.
+Chai-1 and ESMFold2 predict structure and an interface confidence (ipTM), not affinity. Scoring
+their ipTM as an affinity proxy (Table~\ref{tab:proxy}), the signal is weaker than the
+affinity-head models---Chai-1 reaches overall Pearson $0.39$ ($n{=}598$), ESMFold2 $0.21$
+($n{=}237$ folds via the hosted API). Two observations follow. First, the affinity heads in
+Nesso-1/Boltz-2 add real signal over raw structural confidence. Second, and more telling, the
+well-powered Chai-1 ipTM \emph{itself} carries the family-support dependence: it rises from
+$0.16$ on novel families to $0.46$ on redundant ones (family-support slope $t=-3.8$). The
+familiarity dependence is therefore a property of the learned structural representation, not only
+of a trained affinity head. AlphaFold3 would enter this category but its weights are request-only.
+
+\begin{table}[t]
+\centering\small
+\caption{Confidence-proxy co-folders (interface ipTM scored as an affinity proxy). Weaker than
+affinity heads, but the well-powered Chai-1 ipTM shows the same family-support dependence.}
+\label{tab:proxy}
+\begin{tabular}{lcccc}
+\toprule
+Method & $n$ & overall $r$ & novel-fam.\ $r$ & redundant-fam.\ $r$ \\
+\midrule
+Chai-1 (ipTM)   & 598 & 0.394 & 0.155 & 0.461 \\
+ESMFold2 (ipTM) & 237 & 0.208 & 0.169 & \,--\,(underpowered) \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Discussion}
 
