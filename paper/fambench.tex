@@ -371,8 +371,8 @@ affinity-head models, and the two proxies differ instructively. Chai-1 (overall 
 $n{=}598$) \emph{itself} carries the family-support dependence---rising from $0.16$ on novel
 families to $0.46$ on redundant ones (family-support slope $t=-3.8$)---so the familiarity
 dependence is a property of the learned structural representation, not only of a trained affinity
-head. ESMFold2, by contrast (overall $0.16$, $n{=}281$ via the hosted API), is a weak and noisy
-affinity proxy with \emph{no} significant family-support dependence ($t=-0.7$); this is consistent
+head. ESMFold2, by contrast (overall $0.18$, complete $n{=}599$ via the hosted API), is a weak and noisy
+affinity proxy with \emph{no} significant family-support dependence ($t=-0.6$); this is consistent
 with ESMFold2 being optimized for protein--protein interfaces rather than small molecules, so its
 protein--ligand ipTM is poorly calibrated for affinity. AlphaFold3 would enter this category but
 its weights are request-only.
@@ -387,7 +387,7 @@ affinity heads, but the well-powered Chai-1 ipTM shows the same family-support d
 Method & $n$ & overall $r$ & novel-fam.\ $r$ & redundant-fam.\ $r$ \\
 \midrule
 Chai-1 (ipTM)   & 598 & 0.394 & 0.155 & 0.461 \\
-ESMFold2 (ipTM) & 281 & 0.163 & 0.104 & $-0.00$ \\
+ESMFold2 (ipTM) & 599 & 0.183 & 0.102 & 0.022 \\
 \bottomrule
 \end{tabular}
 \end{table}
