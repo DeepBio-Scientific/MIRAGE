@@ -442,6 +442,36 @@ identity and validated leave-superfamily-out; it too reports no ligand-only or t
 absence of such controls across the generalization-benchmark literature is precisely the gap
 FamBench institutionalizes.
 
+\subsection{Docking scoring functions: the split is learned-vs-physics}
+\label{sec:docking}
+
+Docking methods produce an affinity-correlated score, so they enter FamBench directly. Re-scoring
+the crystal pose with a physics function (smina/AutoDock Vina \citep{trott2010vina}) and a
+CNN-rescoring function (gnina \citep{mcnutt2021gnina}, CNNaffinity) separates two regimes cleanly
+(Table~\ref{tab:docking}). The physics score is a weak affinity predictor overall ($r=0.10$) and is
+\emph{family-flat}---its family-support slope is positive ($t=+4.5$), like molecular weight,
+because a physics potential is not trained on families and cannot memorize them. gnina's CNN is a
+much stronger predictor ($r=0.44$) but carries the same significant family-support dependence as the
+co-folders (slope $t=-4.5$): its skill is concentrated on families represented in its PDBbind
+training set. The family-support gradient is therefore not a property of \emph{co-folding} versus
+\emph{docking}; it is a property of \emph{learned} versus \emph{physics} scoring, and it appears
+wherever a scorer is trained on family-redundant structural data.
+
+\begin{table}[t]
+\centering\small
+\caption{Docking scoring functions on FamBench (affinity). A physics score (smina) is family-flat;
+a CNN score (gnina) trained on PDBbind shows the same family-support dependence as the co-folders.}
+\label{tab:docking}
+\begin{tabular}{lccccc}
+\toprule
+Scorer & type & overall $r$ & novel-fam.\ $r$ & redundant-fam.\ $r$ & family-support slope ($t$) \\
+\midrule
+smina (Vina) & physics      & 0.095 & 0.167 & 0.061 & $+0.018\ (+4.5)$ \\
+gnina (CNNaffinity) & learned & 0.444 & 0.330 & 0.423 & $-0.060\ (-4.5)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Discussion}
 
 \paragraph{Why not ``leakage.''} Our evidence establishes \emph{training-familiarity dependence}
