@@ -58,15 +58,17 @@ that matters for a new drug program: **transfer to protein families you have not
 
 ## Models evaluated
 
-FamBench audits 13 methods across four classes. Any new model plugs in the same way.
+FamBench audits methods across six classes. Any new model plugs in the same way.
 
 | class | methods | on FamBench |
 |---|---|---|
 | **affinity co-folders** | Nesso-1, Boltz-2 | strong family-support dependence (G_m +0.45 / +0.62) |
 | **confidence-proxy co-folders** (ipTM, not affinity) | Chai-1, ESMFold2 | Chai-1's ipTM *itself* carries the dependence (novel 0.16 → redundant 0.46, t=−3.8) with no affinity head; ESMFold2's ipTM is a weak, uncalibrated proxy (t=−0.7) |
+| **docking scoring functions** | smina (physics), gnina (CNN) | the split is **learned-vs-physics**: smina family-flat (t=+4.5), gnina CNN family-dependent (t=−4.5) like the co-folders |
 | **family-disjoint ML controls** | RF-QSAR, ligand-kNN | flat across family support (G_m ≈ 0); **beat the co-folders on novel families** |
 | **trivial / identity baselines** | molecular weight, clogp, family-mean | family-mean alone = 0.564 (memorization ceiling); MW ties the co-folders on the novel target |
 | **temporal-arm baselines** (OpenBind) | gnina, smina, AEV-PLIG, AQ-Affinity | none reliably beat molecular weight |
+| **pose prediction** | smina (physics redock) | pose-G_m +0.23 = a *difficulty* floor (novel targets harder to dock even for physics); DL dockers hardware-gated on Blackwell |
 
 That Chai-1 (structure confidence, *no* affinity head) reproduces the family-support dependence
 shows it lives in the learned structural representation — not just a trained affinity head.

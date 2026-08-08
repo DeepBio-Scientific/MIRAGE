@@ -40,8 +40,11 @@ forest ($r=0.41$) beats both co-folders ($0.32$, $0.31$). A prospective, structu
 post-cutoff target (OpenBind EV-A71 2A protease) supplies external confirmation: no co-folder
 reliably exceeds a molecular-weight baseline. Applying the same ligand-only control to the standard
 LBA30 benchmark---which no prior work reports---molecular weight alone ($r=0.44$) matches or beats
-most of the published leaderboard. We call this effect \emph{redundancy-driven
-inflation} / \emph{training-familiarity dependence} rather than leakage, and release FamBench---a
+most of the published leaderboard. Extended to docking scoring functions, the dependence tracks
+\emph{learned vs physics}: a physics score (smina) is family-flat, while a CNN score (gnina) trained
+on PDBbind shows the same gradient as the co-folders ($t=-4.5$). We call this effect
+\emph{redundancy-driven inflation} / \emph{training-familiarity dependence} rather than leakage, and
+release FamBench---a
 plug-in benchmark and dataset that measures accuracy across the full family-support curve, with
 family-disjoint controls and two-level bootstrap inference.
 \end{abstract}
