@@ -42,7 +42,10 @@ reliably exceeds a molecular-weight baseline. Applying the same ligand-only cont
 LBA30 benchmark---which no prior work reports---molecular weight alone ($r=0.44$) matches or beats
 most of the published leaderboard. Extended to docking scoring functions, the dependence tracks
 \emph{learned vs physics}: a physics score (smina) is family-flat, while a CNN score (gnina) trained
-on PDBbind shows the same gradient as the co-folders ($t=-4.5$). We call this effect
+on PDBbind shows the same gradient as the co-folders ($t=-4.5$). On \emph{pose} prediction the gap
+is instead a difficulty floor: physics and a SOTA neural diffusion docker (SigmaDock) show nearly the
+same family gap ($+0.23$ vs $+0.28$), so pose accuracy on novel families is limited by intrinsic
+difficulty, not memorization. We call this effect
 \emph{redundancy-driven inflation} / \emph{training-familiarity dependence} rather than leakage, and
 release FamBench---a
 plug-in benchmark and dataset that measures accuracy across the full family-support curve, with
@@ -478,40 +481,46 @@ gnina (CNNaffinity) & learned & 0.444 & 0.330 & 0.423 & $-0.060\ (-4.5)$ \\
 \subsection{Pose prediction: a difficulty floor, not only memorization}
 \label{sec:pose}
 
-FamBench's family axis also applies to \emph{pose} prediction. Redocking crystal ligands with a
-physics engine (smina) into $50$ novel (singleton) and $50$ redundant ($S_f\ge301$) targets and
-scoring symmetry-corrected RMSD, success ($<2$\,\AA) drops from $86\%$ on redundant families to
-$62\%$ on novel families---a pose-$G_m$ of $+0.23$ (Table~\ref{tab:pose}). Crucially, smina is a
-physics engine that cannot memorize families, so this gap is \emph{genuine difficulty}: novel-family
-targets tend to have larger, more flexible ligands and less drug-like pockets that are harder to
-dock. This is the key methodological difference from affinity: in affinity, the physics baseline is
-flat, so the co-folder gap is pure familiarity dependence; in pose, physics already carries a
-difficulty floor of $+0.23$, and a learned docker's pose-$G_m$ must be measured \emph{against} that
-floor---only the excess is memorization.
+FamBench's family axis also applies to \emph{pose} prediction. We redock crystal ligands into $50$
+novel (singleton) and $50$ redundant ($S_f\ge301$) targets and score symmetry-corrected RMSD, with a
+physics engine (smina) and a state-of-the-art generative neural docker (SigmaDock, SE(3) fragment
+diffusion \citep{prat2026sigmadock}). Both show a family gap (Table~\ref{tab:pose}), and their
+comparison is the point. smina cannot memorize families, yet its success drops from $86\%$
+(redundant) to $62\%$ (novel)---a pose-$G_m$ of $+0.23$ that is \emph{genuine difficulty}:
+novel-family targets tend to have larger, more flexible ligands and less drug-like pockets.
+SigmaDock's pose-$G_m$ is $+0.28$ ($80\%\to52\%$)---barely above the physics floor, so its
+\emph{memorization excess is only} $\approx +0.05$.
+
+This is the methodological payoff of the physics baseline, and it reveals that the family gap behaves
+\emph{differently} across tasks. In affinity, the physics baseline is flat, so the entire learned gap
+is familiarity dependence (Sec.~\ref{sec:docking}: smina slope $t=+4.5$, gnina $t=-4.5$). In pose,
+physics already carries most of the gap as difficulty, and even a SOTA neural docker adds little
+memorization on top---pose accuracy on novel families is limited by intrinsic docking difficulty,
+not primarily by training familiarity.
 
 \begin{table}[t]
 \centering\small
-\caption{Pose prediction on FamBench (redocking, RMSD $<2$\,\AA). Physics docking (smina) already
-shows a family gap---a difficulty floor---because novel-family targets are intrinsically harder to
-dock.}
+\caption{Pose prediction on FamBench (redocking, RMSD $<2$\,\AA, $n{=}50$ per bin). A physics engine
+and a SOTA generative neural docker show nearly the same family gap: most of it is a difficulty
+floor, not memorization.}
 \label{tab:pose}
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-Engine & novel-fam.\ success & redundant-fam.\ success & pose-$G_m$ \\
+Engine & type & novel success & redundant success & pose-$G_m$ \\
 \midrule
-smina (physics) & 0.62 ($n{=}45$) & 0.86 ($n{=}49$) & $+0.23$ \\
+smina     & physics            & 0.62 & 0.86 & $+0.23$ \\
+SigmaDock & DL SE(3) diffusion & 0.52 & 0.80 & $+0.28$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Establishing the learned-docker excess over this floor requires running deep-learning dockers, which
-we could not complete on current-generation (Blackwell / sm\_120) hardware: DiffDock-L pins
-CUDA-11.7-era PyTorch with no sm\_120 kernels, Uni-Mol Docking V2's Uni-Core build failed against
-CUDA 13, and gnina's CNN-refinement docking was too slow to complete the set (minutes to hours per
-large ligand). We therefore report the physics floor and the affinity-side learned-vs-physics split
-(Sec.~\ref{sec:docking}) as the evidence that the family-support dependence is a property of learned
-scoring, and leave the learned pose-$G_m$ as a hardware-gated extension; FamBench ships the pose
-harness so it runs once a compatible docker is available.
+Several other deep-learning dockers could not be run on current-generation (Blackwell / sm\_120)
+hardware, which requires PyTorch built for CUDA~12.8+: DiffDock-L pins CUDA-11.7-era PyTorch with no
+sm\_120 kernels (and no maintained port exists), Uni-Mol Docking V2's Uni-Core is frozen at CUDA~11.8,
+and gnina's CNN-refinement docking was too slow to complete the set. SigmaDock, whose dependencies
+are unpinned, installs cleanly against CUDA~12.8 and supersedes DiffDock in both compatibility and
+accuracy; FamBench ships the pose harness (\texttt{scripts/dock\_pose.py}, plus the SigmaDock adapter)
+so further dockers plug in directly.
 
 \section{Discussion}
 

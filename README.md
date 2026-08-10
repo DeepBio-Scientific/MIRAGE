@@ -68,7 +68,7 @@ FamBench audits methods across six classes. Any new model plugs in the same way.
 | **family-disjoint ML controls** | RF-QSAR, ligand-kNN | flat across family support (G_m ≈ 0); **beat the co-folders on novel families** |
 | **trivial / identity baselines** | molecular weight, clogp, family-mean | family-mean alone = 0.564 (memorization ceiling); MW ties the co-folders on the novel target |
 | **temporal-arm baselines** (OpenBind) | gnina, smina, AEV-PLIG, AQ-Affinity | none reliably beat molecular weight |
-| **pose prediction** | smina (physics redock) | pose-G_m +0.23 = a *difficulty* floor (novel targets harder to dock even for physics); DL dockers hardware-gated on Blackwell |
+| **pose prediction** | smina (physics), SigmaDock (DL SE(3) diffusion) | family gap is mostly a *difficulty* floor: smina +0.23, SigmaDock +0.28 → memorization excess only +0.05 (DiffDock/Uni-Mol Blackwell-blocked) |
 
 That Chai-1 (structure confidence, *no* affinity head) reproduces the family-support dependence
 shows it lives in the learned structural representation — not just a trained affinity head.
