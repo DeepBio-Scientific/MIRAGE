@@ -1,0 +1,15 @@
+{
+ "novel": {
+  "n_attempted": 50,
+  "n_posed": 48,
+  "success": 0.26,
+  "median": 6.58
+ },
+ "seen": {
+  "n_attempted": 50,
+  "n_posed": 48,
+  "success": 0.62,
+  "median": 1.23
+ },
+ "pose_G_m": 0.36
+}

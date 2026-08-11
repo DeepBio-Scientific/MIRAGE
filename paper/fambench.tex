@@ -496,9 +496,12 @@ SigmaDock's pose-$G_m$ is $+0.28$ ($80\%\to52\%$)---a memorization excess of onl
 over the physics floor; it generalizes to novel families about as well as physics permits.
 DiffDock-L's pose-$G_m$ is $+0.36$, and its novel-family accuracy \emph{collapses} to $18\%$ (median
 RMSD $14$\,\AA---the poses are simply wrong) while remaining at $54\%$ on redundant families: a
-memorization excess of $+0.13$, nearly three times SigmaDock's. FamBench's family axis thus separates
-a docker that generalizes from one that does not, recovering as a single pose-$G_m$ the poor
-new-pocket generalization that motivated DiffDock-L's own development \citep{corso2024diffdockl}.
+memorization excess of $+0.13$, nearly three times SigmaDock's. A co-folder (Chai-1
+\citep{chai2024chai1}), which predicts the entire complex de novo rather than docking into a given
+receptor, shows the same large gap ($+0.36$; $62\%\to26\%$ even without MSA input). FamBench's family
+axis thus separates learned models that generalize (SigmaDock) from those that do not (DiffDock-L,
+Chai-1), recovering as a single pose-$G_m$ the poor new-pocket generalization that motivated
+DiffDock-L's own development \citep{corso2024diffdockl}.
 
 The pose picture is therefore richer than affinity, and the physics baseline is what makes it legible.
 In affinity the physics scorer is flat, so the entire learned gap is familiarity dependence
@@ -510,16 +513,17 @@ the specific docker, which FamBench measures directly.
 \begin{table}[t]
 \centering\small
 \caption{Pose prediction on FamBench (redocking, RMSD $<2$\,\AA, $n{=}50$ per bin; failures to
-produce a pose count as non-recoveries). Physics sets a difficulty floor of $+0.23$; the two neural
+produce a pose count as non-recoveries). Physics sets a difficulty floor of $+0.23$; two neural dockers and a co-folder
 dockers add very different memorization excesses.}
 \label{tab:pose}
 \begin{tabular}{lcccc}
 \toprule
 Engine & type & novel success & redundant success & pose-$G_m$ \\
 \midrule
-smina      & physics            & 0.62 & 0.86 & $+0.23$ \\
-SigmaDock  & DL SE(3) diffusion & 0.52 & 0.80 & $+0.28$ \\
-DiffDock-L & DL diffusion       & 0.18 & 0.54 & $+0.36$ \\
+smina      & physics docking     & 0.62 & 0.86 & $+0.23$ \\
+SigmaDock  & DL diffusion docking & 0.52 & 0.80 & $+0.28$ \\
+DiffDock-L & DL diffusion docking & 0.18 & 0.54 & $+0.36$ \\
+Chai-1 (no MSA) & DL co-folding  & 0.26 & 0.62 & $+0.36$ \\
 \bottomrule
 \end{tabular}
 \end{table}
