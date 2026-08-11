@@ -46,7 +46,10 @@ on PDBbind shows the same gradient as the co-folders ($t=-4.5$). On \emph{pose} 
 sets a difficulty floor (pose-$G_m$ $+0.23$) above which neural dockers add a model-dependent
 memorization excess: SigmaDock is close to the floor ($+0.28$), whereas DiffDock-L collapses on novel
 families ($18\%$ success, pose-$G_m$ $+0.36$)---so FamBench separates a generalizing docker from a
-memorizing one. We call this effect
+memorizing one. Single-sequence co-folders show the largest pose gaps of all (Boltz-2 pose-$G_m$
+$+0.64$, novel success $2\%$), and supplying an MSA collapses the gap ($+0.64\to+0.20$) by rescuing
+novel families ($2\%\to46\%$) while leaving seen families untouched---localizing the deficit to
+missing evolutionary signal, the structural analogue of family redundancy. We call this effect
 \emph{redundancy-driven inflation} / \emph{training-familiarity dependence} rather than leakage, and
 release FamBench---a
 plug-in benchmark and dataset that measures accuracy across the full family-support curve, with
@@ -479,42 +482,61 @@ gnina (CNNaffinity) & learned & 0.444 & 0.330 & 0.423 & $-0.060\ (-4.5)$ \\
 \end{tabular}
 \end{table}
 
-\subsection{Pose prediction: a difficulty floor, not only memorization}
+\subsection{Pose prediction: a difficulty floor, memorization excess, and MSA rescue}
 \label{sec:pose}
 
 FamBench's family axis also applies to \emph{pose} prediction. We redock crystal ligands into $50$
 novel (singleton) and $50$ redundant ($S_f\ge301$) targets and score symmetry-corrected RMSD with a
-physics engine (smina) and two state-of-the-art generative neural dockers---SigmaDock (SE(3)
-fragment diffusion \citep{prat2026sigmadock}) and DiffDock-L \citep{corso2024diffdockl}
-(Table~\ref{tab:pose}). The comparison against the physics baseline is the point. smina cannot
-memorize families, yet its success drops from $86\%$ (redundant) to $62\%$ (novel)---a pose-$G_m$ of
-$+0.23$ that is \emph{genuine difficulty}: novel-family targets tend to have larger, more flexible
-ligands and less drug-like pockets. This $+0.23$ is the floor against which learned dockers must be
-read, and the two neural dockers sit very differently above it.
+physics engine (smina), two state-of-the-art generative neural dockers---SigmaDock (SE(3) fragment
+diffusion \citep{prat2026sigmadock}) and DiffDock-L \citep{corso2024diffdockl}---and two co-folders
+that predict the entire complex de novo rather than docking into a given receptor (Chai-1
+\citep{chai2024chai1} and Boltz-2 \citep{passaro2025boltz2}) (Table~\ref{tab:pose}). The comparison
+against the physics baseline is the point. smina cannot memorize families, yet its success drops from
+$86\%$ (redundant) to $62\%$ (novel)---a pose-$G_m$ of $+0.23$ that is \emph{genuine difficulty}:
+novel-family targets tend to have larger, more flexible ligands and less drug-like pockets. This
+$+0.23$ is the floor against which learned dockers must be read, and the learned models sit very
+differently above it.
 
 SigmaDock's pose-$G_m$ is $+0.28$ ($80\%\to52\%$)---a memorization excess of only $\approx +0.05$
 over the physics floor; it generalizes to novel families about as well as physics permits.
 DiffDock-L's pose-$G_m$ is $+0.36$, and its novel-family accuracy \emph{collapses} to $18\%$ (median
 RMSD $14$\,\AA---the poses are simply wrong) while remaining at $54\%$ on redundant families: a
-memorization excess of $+0.13$, nearly three times SigmaDock's. A co-folder (Chai-1
-\citep{chai2024chai1}), which predicts the entire complex de novo rather than docking into a given
-receptor, shows the same large gap ($+0.36$; $62\%\to26\%$ even without MSA input). FamBench's family
-axis thus separates learned models that generalize (SigmaDock) from those that do not (DiffDock-L,
-Chai-1), recovering as a single pose-$G_m$ the poor new-pocket generalization that motivated
-DiffDock-L's own development \citep{corso2024diffdockl}.
+memorization excess of $+0.13$, nearly three times SigmaDock's. The two co-folders, run \emph{without}
+MSA input, show the largest gaps of all: Chai-1 $+0.36$ ($64\%\to28\%$) and Boltz-2 an extreme
+$+0.64$---on novel families Boltz-2 essentially cannot place the ligand ($2\%$ success, median RMSD
+$14$\,\AA), while it succeeds $66\%$ of the time on the redundant families whose homologs it has seen
+many times. Single-sequence co-folding of a novel family is close to guessing; on a familiar family
+it works. FamBench's family axis thus separates learned models that generalize (SigmaDock) from those
+that do not (DiffDock-L, single-sequence co-folders), recovering as a single pose-$G_m$ the poor
+new-pocket generalization that motivated DiffDock-L's own development \citep{corso2024diffdockl}.
+
+\paragraph{MSA rescues novel families, not seen ones.} That the co-folder gap is driven by
+\emph{missing evolutionary signal} on novel families---not by ligand difficulty---is shown directly
+by re-running both co-folders with a ColabFold MSA and comparing matched complexes
+(Table~\ref{tab:posemsa}). Providing an MSA collapses Boltz-2's pose-$G_m$ from $+0.64$ to $+0.20$ by
+lifting novel-family success from $2\%$ to $46\%$ while leaving redundant families unchanged ($66\%$).
+Per complex the effect is one-directional: across the $50$ novel targets the MSA flips $22$ from
+failure to success and \emph{zero} the other way; across the $50$ redundant targets it gains $3$ and
+loses $3$ (net zero). Chai-1 behaves the same way on the $69$ complexes both settings completed
+(pose-$G_m$ $+0.35\to+0.12$, novel $22\%\to33\%$). An MSA does for a novel family what family
+redundancy does for a seen one: it supplies the evolutionary context the model cannot otherwise
+infer. The co-folder pose gap is therefore not irreducible difficulty but a \emph{localizable}
+deficit---FamBench identifies both that the single-sequence co-folders memorize families and
+\emph{what} they are missing when they do not.
 
 The pose picture is therefore richer than affinity, and the physics baseline is what makes it legible.
 In affinity the physics scorer is flat, so the entire learned gap is familiarity dependence
 (Sec.~\ref{sec:docking}). In pose, physics carries a $+0.23$ difficulty floor and neural dockers add a
-\emph{model-dependent} memorization excess on top---small for SigmaDock, large for DiffDock-L---so
-whether pose accuracy on novel families is limited by difficulty or by memorization is a property of
-the specific docker, which FamBench measures directly.
+\emph{model-dependent} memorization excess on top---small for SigmaDock, large for DiffDock-L, extreme
+for single-sequence co-folders but MSA-rescuable---so whether pose accuracy on novel families is
+limited by difficulty or by memorization is a property of the specific docker, which FamBench measures
+directly.
 
 \begin{table}[t]
 \centering\small
 \caption{Pose prediction on FamBench (redocking, RMSD $<2$\,\AA, $n{=}50$ per bin; failures to
-produce a pose count as non-recoveries). Physics sets a difficulty floor of $+0.23$; two neural dockers and a co-folder
-dockers add very different memorization excesses.}
+produce a pose count as non-recoveries). Physics sets a difficulty floor of $+0.23$; neural dockers
+and single-sequence co-folders add very different memorization excesses.}
 \label{tab:pose}
 \begin{tabular}{lcccc}
 \toprule
@@ -523,18 +545,38 @@ Engine & type & novel success & redundant success & pose-$G_m$ \\
 smina      & physics docking     & 0.62 & 0.86 & $+0.23$ \\
 SigmaDock  & DL diffusion docking & 0.52 & 0.80 & $+0.28$ \\
 DiffDock-L & DL diffusion docking & 0.18 & 0.54 & $+0.36$ \\
-Chai-1 (no MSA) & DL co-folding  & 0.26 & 0.62 & $+0.36$ \\
+Chai-1 (no MSA)  & DL co-folding & 0.28 & 0.64 & $+0.36$ \\
+Boltz-2 (no MSA) & DL co-folding & 0.02 & 0.66 & $+0.64$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-We ran all three on current-generation Blackwell (sm\_120) hardware. This required adapting DiffDock-L,
+\begin{table}[t]
+\centering\small
+\caption{Supplying a ColabFold MSA collapses the single-sequence co-folder pose gap by rescuing
+\emph{novel} families while leaving \emph{redundant} ones unchanged. Boltz-2 is the full $n{=}50$ per
+bin; Chai-1 is the matched subset both settings completed ($36$ novel, $33$ redundant). Boltz-2's
+novel rescue is one-directional: $22/50$ complexes flip failure$\to$success, none the reverse.}
+\label{tab:posemsa}
+\begin{tabular}{llcccc}
+\toprule
+Co-folder & input & novel success & redundant success & pose-$G_m$ & novel flips (fail$\to$OK / OK$\to$fail) \\
+\midrule
+Boltz-2 & no MSA & 0.02 & 0.66 & $+0.64$ & --- \\
+Boltz-2 & +MSA   & 0.46 & 0.66 & $+0.20$ & $22 / 0$ \\
+Chai-1  & no MSA & 0.22 & 0.58 & $+0.35$ & --- \\
+Chai-1  & +MSA   & 0.33 & 0.46 & $+0.12$ & $5 / 1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We ran all pose models on current-generation Blackwell (sm\_120) hardware. This required adapting DiffDock-L,
 whose released environment pins CUDA-11.7-era PyTorch (no sm\_120 kernels): installing PyTorch
 2.7/CUDA~12.8 with matching pre-built PyTorch-Geometric wheels, and dropping the unused OpenFold
 dependency, makes it run unmodified---no custom CUDA kernels are involved. (Uni-Mol Docking V2's
 Uni-Core, frozen at CUDA~11.8, and gnina's slow CNN-refinement docking remain impractical here.)
-FamBench ships the pose harness and the DiffDock/SigmaDock adapters so further dockers plug in
-directly.
+FamBench ships the pose harness and the DiffDock/SigmaDock and Chai-1/Boltz-2 co-folder adapters
+(with and without MSA) so further dockers and co-folders plug in directly.
 
 \section{Discussion}
 
