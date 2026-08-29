@@ -20,3 +20,12 @@ venv/
 *.toc
 *.synctex.gz
 paper/*.log
+
+# Untracked local paper source (kept on disk, not published here)
+paper/
+
+# Local tooling / secrets, not part of the benchmark
+.env
+.claude/
+.superpowers/
+docs/superpowers/
