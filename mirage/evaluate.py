@@ -54,7 +54,7 @@ class RedundancyReport:
 
     def summary(self) -> str:
         lines = [
-            f"FamBench redundancy report  (n={self.n})",
+            f"MIRAGE redundancy report  (n={self.n})",
             f"  overall            Pearson {self.overall_pearson:+.3f}  "
             f"Spearman {self.overall_spearman:+.3f}",
             f"  NOVEL families     Pearson {self.novel_family_pearson:+.3f}   "
@@ -190,7 +190,7 @@ class TemporalReport:
     residual_vs_mw_spearman: float  # signal beyond molecular weight
 
     def summary(self) -> str:
-        lines = [f"FamBench temporal report  (novel target, n={self.n})",
+        lines = [f"MIRAGE temporal report  (novel target, n={self.n})",
                  f"  your model         Spearman {self.spearman:+.3f}  "
                  f"Pearson {self.pearson:+.3f}"]
         for k, v in sorted(self.baseline_spearman.items(), key=lambda kv: -kv[1]):

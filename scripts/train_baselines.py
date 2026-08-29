@@ -8,7 +8,7 @@ Features:
   ligand  = ECFP4, 1024 bits (RDKit Morgan radius 2)
   protein = amino-acid composition (20) + log10 length
 
-Outputs id,prediction CSVs compatible with `fambench score redundancy ...`.
+Outputs id,prediction CSVs compatible with `mirage score redundancy ...`.
 Requires: rdkit, scikit-learn, pandas, numpy. Run after loading the redundancy set.
 """
 import argparse
@@ -48,8 +48,8 @@ def main():
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.model_selection import GroupKFold
 
-    import fambench
-    df = fambench.load("redundancy", path=a.data).reset_index(drop=True)
+    import mirage
+    df = mirage.load("redundancy", path=a.data).reset_index(drop=True)
     print(f"[train] featurising {len(df)} complexes...")
     L = np.vstack([ecfp(s) for s in df.smiles]).astype(np.float32)
     P = np.vstack([aacomp(s) for s in df.sequence])

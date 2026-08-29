@@ -1,8 +1,8 @@
-"""Score co-folding *structure-confidence* models on FamBench.
+"""Score co-folding *structure-confidence* models on MIRAGE.
 
 AlphaFold3, Chai-1, and ESMFold2 predict a bound complex and a confidence, not an
 affinity. Their protein-ligand interface confidence (ipTM) is nonetheless routinely used
-as a rough binding-likelihood signal. FamBench can score it -- clearly labeled as a
+as a rough binding-likelihood signal. MIRAGE can score it -- clearly labeled as a
 proxy, not an affinity prediction -- to test whether structural confidence alone carries
 the family-redundancy leakage.
 
@@ -70,7 +70,7 @@ def forge_esmfold2_iptm(fasta_or_inputs, token_env: str = "BIOHUB_TOKEN",
     (never pass it inline). Returns id -> interface ipTM.
 
     This is a thin wrapper; see esm.sdk.esmfold2_client. Provided so ESMFold2 plugs into
-    FamBench once you supply credentials -- FamBench does not handle your token.
+    MIRAGE once you supply credentials -- MIRAGE does not handle your token.
     """
     token = os.environ.get(token_env)
     if not token:

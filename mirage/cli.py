@@ -1,9 +1,9 @@
 """Command-line interface: score a predictions CSV without writing any Python.
 
-    fambench score redundancy preds.csv
-    fambench score temporal preds.csv --pred-col affinity --lower-is-stronger
-    fambench baselines           # run the shipped MW / clogp baselines
-    fambench info                # dataset sizes and columns
+    mirage score redundancy preds.csv
+    mirage score temporal preds.csv --pred-col affinity --lower-is-stronger
+    mirage baselines           # run the shipped MW / clogp baselines
+    mirage info                # dataset sizes and columns
 """
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def _cmd_info(a):
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="fambench", description=__doc__,
+    p = argparse.ArgumentParser(prog="mirage", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--data", help="directory containing redundancy.parquet / temporal.parquet")
     sub = p.add_subparsers(dest="cmd", required=True)

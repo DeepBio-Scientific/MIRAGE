@@ -1,7 +1,7 @@
 """Trivial baselines. A model that does not beat molecular weight on novel targets
 is not adding value -- this is the whole point of the benchmark.
 
-Predictions follow the FamBench convention: higher = stronger binder.
+Predictions follow the MIRAGE convention: higher = stronger binder.
 """
 from __future__ import annotations
 

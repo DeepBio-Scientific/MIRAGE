@@ -1,7 +1,7 @@
 import json, numpy as np, pandas as pd
 from scipy import stats
 from sklearn.model_selection import KFold
-red=pd.read_parquet('/home/mehdi/dev/fambench/data/redundancy.parquet').reset_index(drop=True).rename(columns={'id':'code'})
+red=pd.read_parquet('/home/mehdi/dev/mirage/data/redundancy.parquet').reset_index(drop=True).rename(columns={'id':'code'})
 red['loglen']=np.log10(red.sequence.str.len())
 M='/home/mehdi/dev/mrnafold/data/interim/'
 preds={

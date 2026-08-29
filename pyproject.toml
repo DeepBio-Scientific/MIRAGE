@@ -3,14 +3,14 @@ requires = ["setuptools>=64"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fambench"
+name = "mirage"
 version = "0.1.0"
-description = "Family-Stratified Protein-Ligand Affinity Benchmark: does your affinity model generalise beyond redundant protein families?"
+description = "MIRAGE: Measuring Interpolation and Redundancy in Affinity GEneralization -- the headline r=0.6 is a mirage that dissolves on singleton families."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["binding-affinity", "benchmark", "cofolding", "drug-discovery", "data-leakage"]
-authors = [{ name = "FamBench contributors" }]
+authors = [{ name = "MIRAGE contributors" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -31,17 +31,17 @@ plots = ["matplotlib>=3.6"]
 dev = ["pytest>=7", "ruff>=0.1"]
 
 [project.scripts]
-fambench = "fambench.cli:main"
+mirage = "mirage.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/DeepBioScientific/fambench"
-Dataset = "https://huggingface.co/datasets/DeepBioScientific/fambench"
+Homepage = "https://github.com/DeepBioScientific/mirage"
+Dataset = "https://huggingface.co/datasets/DeepBioScientific/mirage"
 
 [tool.setuptools]
-packages = ["fambench"]
+packages = ["mirage"]
 
 [tool.setuptools.package-data]
-fambench = ["../data/*.parquet"]
+mirage = ["../data/*.parquet"]
 
 [tool.ruff]
 line-length = 100

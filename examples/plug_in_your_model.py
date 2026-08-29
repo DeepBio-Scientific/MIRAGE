@@ -1,17 +1,17 @@
-"""Minimal example: wrap your affinity model and run FamBench.
+"""Minimal example: wrap your affinity model and run MIRAGE.
 
 A model is any callable ``predict(sequence, smiles) -> float`` where a higher return
 value means a stronger binder. If your model outputs log10(IC50) or similar
 (lower = stronger), pass ``higher_is_stronger=False`` to the run_* functions.
 """
-import fambench
+import mirage
 
 
 # ---------------------------------------------------------------------------
 # 1. Wrap your model. Replace the body with a real call to your predictor.
 #    (Here we use the molecular-weight baseline as a stand-in.)
 # ---------------------------------------------------------------------------
-my_model = fambench.baseline_model("molecular_weight")
+my_model = mirage.baseline_model("molecular_weight")
 
 # A real example would look like:
 #
@@ -26,12 +26,12 @@ my_model = fambench.baseline_model("molecular_weight")
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     # Redundancy arm: how does accuracy scale with protein-family representation?
-    red = fambench.run_redundancy(my_model, core=True)   # core = balanced 3,360 subset
+    red = mirage.run_redundancy(my_model, core=True)   # core = balanced 3,360 subset
     print(red.summary())
     print()
 
     # Temporal arm: a genuinely novel target. Do you beat molecular weight?
-    tmp = fambench.run_temporal(my_model)
+    tmp = mirage.run_temporal(my_model)
     print(tmp.summary())
 
     # The headline numbers you should report:

@@ -6,8 +6,8 @@ need to touch the Python API. Produce a two-column CSV and score it.
 ## 1. Get the inputs
 
 ```python
-import fambench
-df = fambench.load("redundancy", core=True)   # id, sequence, smiles, pK, family_size, ...
+import mirage
+df = mirage.load("redundancy", core=True)   # id, sequence, smiles, pK, family_size, ...
 df[["id", "sequence", "smiles"]].to_csv("inputs.csv", index=False)
 ```
 
@@ -31,8 +31,8 @@ id,prediction
 ## 3. Score
 
 ```bash
-fambench score redundancy preds.csv
-fambench score temporal   preds_temporal.csv --lower-is-stronger
+mirage score redundancy preds.csv
+mirage score temporal   preds_temporal.csv --lower-is-stronger
 ```
 
 You will get the family-size dose-response, the novel-family headline number, and the

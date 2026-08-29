@@ -1,6 +1,6 @@
 import numpy as np
 
-from fambench.evaluate import evaluate_redundancy, evaluate_temporal
+from mirage.evaluate import evaluate_redundancy, evaluate_temporal
 
 
 def test_perfect_predictor_scores_high():

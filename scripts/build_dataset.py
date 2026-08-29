@@ -1,4 +1,4 @@
-"""Regenerate the FamBench parquet tables from source data.
+"""Regenerate the MIRAGE parquet tables from source data.
 
 This documents exactly how the shipped tables were built; you do not need to run it to
 use the benchmark. Sources (download separately, respecting their licenses):
@@ -156,7 +156,7 @@ def main():
     ap.add_argument("--pdbbind-index", help="INDEX_general_PL.*.lst")
     ap.add_argument("--complexes-dir", help="dir of <code>/<code>_{protein.pdb,ligand.sdf}")
     ap.add_argument("--out-dir", default="data")
-    ap.add_argument("--workdir", default="/tmp/fambench_build")
+    ap.add_argument("--workdir", default="/tmp/mirage_build")
     a = ap.parse_args()
     os.makedirs(a.workdir, exist_ok=True)
     os.makedirs(a.out_dir, exist_ok=True)

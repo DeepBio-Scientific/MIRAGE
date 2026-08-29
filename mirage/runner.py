@@ -2,7 +2,7 @@
 
 A model is any callable ``predict(sequence: str, smiles: str) -> float`` returning a
 score where higher means stronger binding. If your model returns log10(IC50) or another
-"lower is stronger" score, pass ``higher_is_stronger=False`` and FamBench flips the sign.
+"lower is stronger" score, pass ``higher_is_stronger=False`` and MIRAGE flips the sign.
 
 You can also skip Python entirely and score a predictions CSV -- see ``score_csv``.
 """
@@ -34,7 +34,7 @@ def run_redundancy(model: Callable[[str, str], float], *, core: bool = True,
     3,360-target subset (recommended for a first pass)."""
     df = load("redundancy", path=path, core=core)
     if progress:
-        print(f"[fambench] scoring {len(df)} complexes "
+        print(f"[mirage] scoring {len(df)} complexes "
               f"({'core' if core else 'full'} redundancy set)...")
     preds = _apply(model, df)
     return evaluate_redundancy(
@@ -50,7 +50,7 @@ def run_temporal(model: Callable[[str, str], float], *,
     """Evaluate a model on the novel-target temporal set, against the shipped baselines."""
     df = load("temporal", path=path)
     if progress:
-        print(f"[fambench] scoring {len(df)} compounds (novel target)...")
+        print(f"[mirage] scoring {len(df)} compounds (novel target)...")
     preds = _apply(model, df)
     bl = {"molecular_weight": df.baseline_molecular_weight.values,
           "clogp": df.baseline_clogp.values}
@@ -75,7 +75,7 @@ def score_csv(name: str, pred_csv: str, *, id_col: str = "id",
     preds = df["id"].map(pr).values.astype(float)
     n_missing = int(np.isnan(preds).sum())
     if n_missing:
-        print(f"[fambench] warning: {n_missing}/{len(df)} ids missing from predictions")
+        print(f"[mirage] warning: {n_missing}/{len(df)} ids missing from predictions")
     if name == "redundancy":
         return evaluate_redundancy(df.pK.values, preds, df.family_size.values,
                                    affinity_type=df.affinity_type.values,

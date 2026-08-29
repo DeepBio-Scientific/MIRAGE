@@ -1,9 +1,9 @@
-"""Push the FamBench dataset to the Hugging Face Hub.
+"""Push the MIRAGE dataset to the Hugging Face Hub.
 
-Run this yourself with your own token -- FamBench never handles credentials for you:
+Run this yourself with your own token -- MIRAGE never handles credentials for you:
 
     huggingface-cli login          # once, stores your token locally
-    python scripts/push_to_hub.py --repo <your-namespace>/fambench
+    python scripts/push_to_hub.py --repo <your-namespace>/mirage
 
 This uploads the two config splits (`redundancy`, `temporal`) and the dataset card.
 """
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--repo", required=True, help="e.g. yourname/fambench")
+    ap.add_argument("--repo", required=True, help="e.g. yourname/mirage")
     ap.add_argument("--private", action="store_true")
     args = ap.parse_args()
 

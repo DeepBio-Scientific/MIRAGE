@@ -1,4 +1,4 @@
-"""Resumable ESMFold2 (Forge) completion pass for the FamBench confidence-proxy arm.
+"""Resumable ESMFold2 (Forge) completion pass for the MIRAGE confidence-proxy arm.
 
 Forge caps at ~100 folds/day, so completing the 600-target balanced set takes several
 daily runs. This script SKIPS already-folded complexes and stops gracefully at the daily
@@ -26,9 +26,9 @@ seqs={}; c=None
 for l in open('/home/mehdi/dev/mrnafold/data/interim/pdbbind_prot.fasta'):
     if l.startswith('>'): c=l[1:].strip()
     else: seqs[c]=l.strip()
-red=pd.read_parquet('/home/mehdi/dev/fambench/data/redundancy.parquet')
+red=pd.read_parquet('/home/mehdi/dev/mirage/data/redundancy.parquet')
 smiles=dict(zip(red.id,red.smiles))
-codes=json.load(open('/tmp/fambench_scratch/chai_codes.json'))  # the full 600 balanced set
+codes=json.load(open('/tmp/mirage_scratch/chai_codes.json'))  # the full 600 balanced set
 
 OUT='/home/mehdi/dev/mrnafold/data/interim/pred_esmfold2_iptm.json'
 out=json.load(open(OUT)) if os.path.exists(OUT) else {}

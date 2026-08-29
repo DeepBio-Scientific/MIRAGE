@@ -1,15 +1,14 @@
 <div align="center">
 
-# FamBench
+# MIRAGE
 
-**Family-Stratified Protein–Ligand Affinity Benchmark**
+**M**easuring **I**nterpolation and **R**edundancy in **A**ffinity **GE**neralization
 
-*Does your affinity model generalise to novel targets, or is its accuracy carried by
-protein families it has seen many times?*
+*The headline r ≈ 0.6 is a mirage that dissolves on singleton families.*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBioScientific/fambench)
+[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBioScientific/mirage)
 
 </div>
 
@@ -17,7 +16,7 @@ protein families it has seen many times?*
 
 Frontier co-folding affinity models report Pearson ≈ 0.6, but that number conflates two
 things: *interpolation within protein families already in public data* and *transfer to novel
-targets*. FamBench measures the second. The central result is an **interaction** — co-folders
+targets*. MIRAGE measures the second. The central result is an **interaction** — co-folders
 depend strongly on protein-family support; family-disjoint shallow controls do not.
 
 Define the **family generalization gap** `G_m = r(support≥301) − r(support=1)` (matched-affinity,
@@ -51,16 +50,16 @@ the published leaderboard (ENN 0.39, DeepDTA 0.47, near 3DCNN 0.55 / GNN 0.55). 
 the small margins reported by the rest were never checked against ligand size.
 
 We call this **redundancy-driven inflation / training-familiarity dependence**, not "leakage" —
-reserving that term for demonstrable train/test boundary crossing. FamBench measures the thing
+reserving that term for demonstrable train/test boundary crossing. MIRAGE measures the thing
 that matters for a new drug program: **transfer to protein families you have not seen.**
 
-📄 **Paper**: [`paper/fambench.pdf`](paper/) — full experiments, controls, and analysis.
+📄 **Paper**: [`paper/mirage.pdf`](paper/) — full experiments, controls, and analysis.
 
 ## Models evaluated
 
-FamBench audits methods across six classes. Any new model plugs in the same way.
+MIRAGE audits methods across six classes. Any new model plugs in the same way.
 
-| class | methods | on FamBench |
+| class | methods | on MIRAGE |
 |---|---|---|
 | **affinity co-folders** | Nesso-1, Boltz-2 | strong family-support dependence (G_m +0.45 / +0.62) |
 | **confidence-proxy co-folders** (ipTM, not affinity) | Chai-1, ESMFold2 | Chai-1's ipTM *itself* carries the dependence (novel 0.16 → redundant 0.46, t=−3.8) with no affinity head; ESMFold2's ipTM is a weak, uncalibrated proxy (t=−0.7) |
@@ -73,22 +72,22 @@ FamBench audits methods across six classes. Any new model plugs in the same way.
 That Chai-1 (structure confidence, *no* affinity head) reproduces the family-support dependence
 shows it lives in the learned structural representation — not just a trained affinity head.
 
-> **AlphaFold3** is a pluggable stub ([`fambench/cofolders.py`](fambench/cofolders.py)): its code
+> **AlphaFold3** is a pluggable stub ([`mirage/cofolders.py`](mirage/cofolders.py)): its code
 > is open but weights are request-only, and it has no affinity head. Provide weights and it runs
 > as an ipTM proxy with one call.
 
 ## Install
 
 ```bash
-pip install fambench                 # core
-pip install "fambench[baselines]"    # + rdkit, to run the MW/clogp baselines
-pip install "fambench[hub]"          # + datasets, to pull data from the Hub
+pip install mirage                 # core
+pip install "mirage[baselines]"    # + rdkit, to run the MW/clogp baselines
+pip install "mirage[hub]"          # + datasets, to pull data from the Hub
 ```
 
 Or from source:
 
 ```bash
-git clone https://github.com/DeepBioScientific/fambench && cd fambench
+git clone https://github.com/DeepBioScientific/mirage && cd mirage
 pip install -e ".[baselines,dev]"
 ```
 
@@ -97,13 +96,13 @@ pip install -e ".[baselines,dev]"
 Wrap your model as `predict(sequence, smiles) -> float` (higher = stronger binder):
 
 ```python
-import fambench
+import mirage
 
 def my_model(sequence, smiles):
     return my_net.predict_affinity(sequence, smiles)
 
-red = fambench.run_redundancy(my_model)   # balanced 3,360-target quick set
-tmp = fambench.run_temporal(my_model)     # novel target vs molecular weight
+red = mirage.run_redundancy(my_model)   # balanced 3,360-target quick set
+tmp = mirage.run_temporal(my_model)     # novel target vs molecular weight
 print(red.summary())
 print(tmp.summary())
 ```
@@ -113,8 +112,8 @@ If your score is "lower = stronger" (e.g. `log10(IC50)`), pass `higher_is_strong
 **No Python?** Score a CSV instead:
 
 ```bash
-fambench score redundancy preds.csv          # columns: id, prediction
-fambench score temporal   preds.csv --lower-is-stronger
+mirage score redundancy preds.csv          # columns: id, prediction
+mirage score temporal   preds.csv --lower-is-stronger
 ```
 
 See [`examples/`](examples/) for a runnable template and the CSV workflow.
@@ -136,7 +135,7 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
 
 ## Datasets
 
-Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBioScientific/fambench):
+Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBioScientific/mirage):
 
 - **`redundancy`** — 18,759 PDBbind-derived complexes with `family_size` annotations
   (`in_core` marks a balanced 3,360 quick-eval subset).
@@ -144,8 +143,8 @@ Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets
   molecular-weight / clogp / Boltz-2 baselines.
 
 ```python
-df = fambench.load("redundancy", core=True)
-df = fambench.load("temporal")
+df = mirage.load("redundancy", core=True)
+df = mirage.load("temporal")
 ```
 
 Regenerate from source with [`scripts/build_dataset.py`](scripts/build_dataset.py);
@@ -153,7 +152,7 @@ push your own copy to the Hub with [`scripts/push_to_hub.py`](scripts/push_to_hu
 
 ## Reporting results
 
-When you report a FamBench number, please quote the **family generalization gap `G_m`** and the
+When you report a MIRAGE number, please quote the **family generalization gap `G_m`** and the
 **novel-family Pearson**, not just the overall correlation — that is the whole point. A model that
 scores 0.6 overall but 0.1 on novel families should say so. Prefer equal-family weighting and the
 two-level bootstrap; report the OpenBind score as *one external target*, not population-level proof.
@@ -167,9 +166,9 @@ derived from the **OpenBind A71EV2A** release (CC0). Family sizes use MMseqs2 at
 ## Citation
 
 ```bibtex
-@software{fambench2026,
-  title  = {FamBench: Family-Stratified Protein-Ligand Affinity Benchmark},
+@software{mirage2026,
+  title  = {MIRAGE: Measuring Interpolation and Redundancy in Affinity GEneralization},
   year   = {2026},
-  url    = {https://github.com/DeepBioScientific/fambench}
+  url    = {https://github.com/DeepBioScientific/mirage}
 }
 ```

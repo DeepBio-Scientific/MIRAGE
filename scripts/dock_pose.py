@@ -9,7 +9,7 @@ from spyrmsd.molecule import Molecule
 
 ENGINE=sys.argv[1]; BIN=sys.argv[2]
 LDP=os.environ.get('LD_LIBRARY_PATH','')
-BASE='/tmp/fambench_scratch/plall/P-L'
+BASE='/tmp/mirage_scratch/plall/P-L'
 aff=json.load(open('/home/mehdi/dev/mrnafold/data/interim/pdbbind_affinity.json'))
 binof={a['code']:a['bin'] for a in aff}
 poseset=json.load(open('/home/mehdi/dev/mrnafold/data/interim/poseset.json'))

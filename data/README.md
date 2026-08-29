@@ -1,5 +1,7 @@
 ---
-license: mit
+license: other
+license_name: mixed-see-below
+license_link: https://github.com/DeepBioScientific/mirage#provenance--licensing
 task_categories:
   - tabular-regression
 tags:
@@ -8,7 +10,7 @@ tags:
   - protein-ligand
   - benchmark
   - data-leakage
-pretty_name: FamBench
+pretty_name: MIRAGE
 configs:
   - config_name: redundancy
     data_files: redundancy/test-*.parquet
@@ -17,7 +19,7 @@ configs:
     data_files: temporal/test-*.parquet
 ---
 
-# FamBench: Family-Stratified Protein–Ligand Affinity Benchmark
+# MIRAGE: Measuring Interpolation and Redundancy in Affinity GEneralization
 
 A benchmark for measuring whether a protein–ligand **binding-affinity** model generalises
 beyond protein families that are heavily represented in the PDB, or whether its reported
@@ -64,16 +66,16 @@ a ≤ 2021 cutoff could have seen.
 ## Usage
 
 ```python
-import fambench
+import mirage
 
 def my_model(sequence, smiles):
     return score               # higher = stronger binder
 
-print(fambench.run_redundancy(my_model).summary())
-print(fambench.run_temporal(my_model).summary())
+print(mirage.run_redundancy(my_model).summary())
+print(mirage.run_temporal(my_model).summary())
 ```
 
-See <https://github.com/DeepBioScientific/fambench> for the harness, baselines, and CLI.
+See <https://github.com/DeepBioScientific/mirage> for the harness, baselines, and CLI.
 
 ## Provenance & licensing
 
