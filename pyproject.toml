@@ -35,7 +35,7 @@ mirage = "mirage.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/DeepBio-Scientific/MIRAGE"
-Dataset = "https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE"
+Dataset = "https://huggingface.co/datasets/DeepBioScientific/MIRAGE"
 
 [tool.setuptools]
 packages = ["mirage"]

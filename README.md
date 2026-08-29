@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE)
+[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBioScientific/MIRAGE)
 
 </div>
 
@@ -135,7 +135,7 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
 
 ## Datasets
 
-Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE):
+Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBioScientific/MIRAGE):
 
 - **`redundancy`** — 18,759 PDBbind-derived complexes with `family_size` annotations
   (`in_core` marks a balanced 3,360 quick-eval subset).
