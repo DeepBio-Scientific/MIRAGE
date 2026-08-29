@@ -8,7 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)
-[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBioScientific/mirage)
+[![Dataset](https://img.shields.io/badge/🤗-dataset-yellow.svg)](https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE)
 
 </div>
 
@@ -87,7 +87,7 @@ pip install "mirage[hub]"          # + datasets, to pull data from the Hub
 Or from source:
 
 ```bash
-git clone https://github.com/DeepBioScientific/mirage && cd mirage
+git clone https://github.com/DeepBio-Scientific/MIRAGE && cd mirage
 pip install -e ".[baselines,dev]"
 ```
 
@@ -135,7 +135,7 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
 
 ## Datasets
 
-Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBioScientific/mirage):
+Two configs, shipped as parquet and on the [Hub](https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE):
 
 - **`redundancy`** — 18,759 PDBbind-derived complexes with `family_size` annotations
   (`in_core` marks a balanced 3,360 quick-eval subset).
@@ -169,6 +169,6 @@ derived from the **OpenBind A71EV2A** release (CC0). Family sizes use MMseqs2 at
 @software{mirage2026,
   title  = {MIRAGE: Measuring Interpolation and Redundancy in Affinity GEneralization},
   year   = {2026},
-  url    = {https://github.com/DeepBioScientific/mirage}
+  url    = {https://github.com/DeepBio-Scientific/MIRAGE}
 }
 ```

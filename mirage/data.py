@@ -17,7 +17,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-HF_REPO = "DeepBioScientific/mirage"  # set to your namespace before pushing
+HF_REPO = "DeepBio-Scientific/MIRAGE"
 _PKG_DATA = Path(__file__).resolve().parent.parent / "data"
 
 

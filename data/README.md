@@ -1,7 +1,7 @@
 ---
 license: other
 license_name: mixed-see-below
-license_link: https://github.com/DeepBioScientific/mirage#provenance--licensing
+license_link: https://github.com/DeepBio-Scientific/MIRAGE#provenance--licensing
 task_categories:
   - tabular-regression
 tags:
@@ -75,7 +75,7 @@ print(mirage.run_redundancy(my_model).summary())
 print(mirage.run_temporal(my_model).summary())
 ```
 
-See <https://github.com/DeepBioScientific/mirage> for the harness, baselines, and CLI.
+See <https://github.com/DeepBio-Scientific/MIRAGE> for the harness, baselines, and CLI.
 
 ## Provenance & licensing
 

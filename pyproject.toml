@@ -34,8 +34,8 @@ dev = ["pytest>=7", "ruff>=0.1"]
 mirage = "mirage.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/DeepBioScientific/mirage"
-Dataset = "https://huggingface.co/datasets/DeepBioScientific/mirage"
+Homepage = "https://github.com/DeepBio-Scientific/MIRAGE"
+Dataset = "https://huggingface.co/datasets/DeepBio-Scientific/MIRAGE"
 
 [tool.setuptools]
 packages = ["mirage"]
