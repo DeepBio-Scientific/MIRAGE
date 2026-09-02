@@ -48,11 +48,15 @@ class RedundancyReport:
     novel_family_pearson: float  # headline: accuracy on singleton+small families
     redundant_family_pearson: float
     leakage_slope: float  # OLS coef of abs-error on log10(family_size)
-    leakage_slope_t: float
+    leakage_slope_t: float  # cluster-robust (by family) if family_id was given
+    leakage_slope_t_ols: float  # unclustered, for comparison only
+    n_families: int
     bins: list[BinResult] = field(default_factory=list)
     matched_bins: list[BinResult] = field(default_factory=list)
 
     def summary(self) -> str:
+        clustering = (f"{self.n_families} family clusters" if self.n_families
+                      else "unclustered")
         lines = [
             f"MIRAGE redundancy report  (n={self.n})",
             f"  overall            Pearson {self.overall_pearson:+.3f}  "
@@ -60,8 +64,9 @@ class RedundancyReport:
             f"  NOVEL families     Pearson {self.novel_family_pearson:+.3f}   "
             f"<- the number that matters for a new target",
             f"  redundant families Pearson {self.redundant_family_pearson:+.3f}",
-            f"  leakage slope      {self.leakage_slope:+.3f} (t={self.leakage_slope_t:+.1f})  "
-            f"[abs-error vs log10 family size; <0 = accuracy bought by redundancy]",
+            f"  leakage slope      {self.leakage_slope:+.3f} "
+            f"(t={self.leakage_slope_t:+.1f}, {clustering})"
+            f"  [abs-error vs log10 family size; <0 = accuracy bought by redundancy]",
             "",
             "  family-size dose-response (matched-pK, label spread held constant):",
             f"    {'bin':>8s} {'n':>4s} {'Pearson':>8s} {'[95% CI]':>16s}",
@@ -93,6 +98,7 @@ def evaluate_redundancy(
     predictions,
     family_size,
     *,
+    family_id=None,
     affinity_type=None,
     matched_pk_window=(4.5, 8.0),
     higher_is_stronger=True,
@@ -107,6 +113,10 @@ def evaluate_redundancy(
         correlation always means "good".
     family_size : array of protein-family sizes (redundancy). Provided by the
         benchmark dataset; do not compute it from your own predictions.
+    family_id : optional array of family identifiers. Complexes within a family are
+        not independent, so when this is supplied the family-support slope is tested
+        with CR1 standard errors clustered on family. Without it the slope is tested
+        with ordinary OLS errors, which overstate significance.
     affinity_type : optional array of {'Kd','Ki','IC50'} for the confound regression.
     matched_pk_window : restrict the per-bin correlations to this pK range so that
         label spread (which attenuates correlation) is comparable across bins.
@@ -121,6 +131,7 @@ def evaluate_redundancy(
     ok = np.isfinite(y) & np.isfinite(p) & np.isfinite(fs)
     y, p, fs = y[ok], p[ok], fs[ok]
     at = np.asarray(affinity_type)[ok] if affinity_type is not None else None
+    fid = np.asarray(family_id)[ok] if family_id is not None else None
     abserr = np.abs(p - (p.mean() + (y - y.mean())))  # placeholder, replaced below
     # calibrate predictions to label scale for an interpretable abs-error
     b1 = np.c_[np.ones_like(p), p]
@@ -162,10 +173,26 @@ def evaluate_redundancy(
         cols += [(at == "Ki").astype(float), (at == "IC50").astype(float)]
         names += ["is_Ki", "is_IC50"]
     X = np.column_stack(cols)
-    coef = np.linalg.lstsq(X, abserr, rcond=None)[0]
+    XtX_inv = np.linalg.pinv(X.T @ X)
+    coef = XtX_inv @ X.T @ abserr
     resid = abserr - X @ coef
-    dof = max(len(abserr) - X.shape[1], 1)
-    se = np.sqrt(np.diag(np.linalg.pinv(X.T @ X)) * (resid @ resid) / dof)
+    n_obs, n_par = X.shape
+    dof = max(n_obs - n_par, 1)
+    se_ols = np.sqrt(np.diag(XtX_inv) * (resid @ resid) / dof)
+    se = se_ols
+    n_fam = 0
+    if fid is not None:
+        # CR1 cluster-robust covariance: complexes in one family are dependent.
+        meat = np.zeros((n_par, n_par))
+        order = np.argsort(fid, kind="stable")
+        bounds = np.flatnonzero(np.r_[True, fid[order][1:] != fid[order][:-1]])
+        for a, b in zip(bounds, np.r_[bounds[1:], len(order)]):
+            g = order[a:b]
+            sc = X[g].T @ resid[g]
+            meat += np.outer(sc, sc)
+        n_fam = len(bounds)
+        scale = (n_fam / max(n_fam - 1, 1)) * ((n_obs - 1) / dof)
+        se = np.sqrt(np.diag(XtX_inv @ (scale * meat) @ XtX_inv))
     j = names.index("log10_famsize")
 
     return RedundancyReport(
@@ -176,6 +203,8 @@ def evaluate_redundancy(
         redundant_family_pearson=redun.pearson if redun else float("nan"),
         leakage_slope=float(coef[j]),
         leakage_slope_t=float(coef[j] / se[j]) if se[j] else float("nan"),
+        leakage_slope_t_ols=float(coef[j] / se_ols[j]) if se_ols[j] else float("nan"),
+        n_families=int(n_fam),
         bins=bins,
         matched_bins=matched,
     )

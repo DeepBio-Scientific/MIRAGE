@@ -44,6 +44,29 @@ def test_leakage_slope_detects_redundancy_dependence():
     assert rep.redundant_family_pearson > rep.novel_family_pearson
 
 
+def test_family_clustered_se_is_more_conservative():
+    # complexes in one family share a per-family error offset, so they are not
+    # independent; ignoring that overstates the significance of the support slope.
+    rng = np.random.default_rng(5)
+    n_fam, per_fam = 60, 20
+    fid = np.repeat(np.arange(n_fam), per_fam)
+    size = np.repeat(rng.choice([1, 3, 10, 50, 150, 400], n_fam), per_fam)
+    n = n_fam * per_fam
+    y = rng.uniform(3, 10, n)
+    shock = np.repeat(rng.normal(0, 1.5, n_fam), per_fam)  # family-level error
+    pred = y + shock + rng.normal(0, 0.3, n)
+
+    rep = evaluate_redundancy(y, pred, size, family_id=fid)
+    assert rep.n_families == n_fam
+    assert abs(rep.leakage_slope_t) < abs(rep.leakage_slope_t_ols)
+
+    # omitting family_id falls back to unclustered errors
+    plain = evaluate_redundancy(y, pred, size)
+    assert plain.n_families == 0
+    assert plain.leakage_slope_t == plain.leakage_slope_t_ols
+    assert plain.leakage_slope == rep.leakage_slope  # the point estimate is unchanged
+
+
 def test_temporal_report_and_residual():
     rng = np.random.default_rng(4)
     n = 300

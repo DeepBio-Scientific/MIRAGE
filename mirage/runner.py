@@ -39,6 +39,7 @@ def run_redundancy(model: Callable[[str, str], float], *, core: bool = True,
     preds = _apply(model, df)
     return evaluate_redundancy(
         df.pK.values, preds, df.family_size.values,
+        family_id=df.family_id.values,
         affinity_type=df.affinity_type.values,
         higher_is_stronger=higher_is_stronger,
     )
@@ -78,6 +79,7 @@ def score_csv(name: str, pred_csv: str, *, id_col: str = "id",
         print(f"[mirage] warning: {n_missing}/{len(df)} ids missing from predictions")
     if name == "redundancy":
         return evaluate_redundancy(df.pK.values, preds, df.family_size.values,
+                                   family_id=df.family_id.values,
                                    affinity_type=df.affinity_type.values,
                                    higher_is_stronger=higher_is_stronger)
     bl = {"molecular_weight": df.baseline_molecular_weight.values,

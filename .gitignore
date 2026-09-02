@@ -23,6 +23,12 @@ paper/*.log
 
 # Untracked local paper source (kept on disk, not published here)
 paper/
+mirage_4pg.pdf
+mirage_4pg_revisions.md
+
+# Run outputs: model predictions, MSA caches, docked poses. Large and regenerable
+# by the scripts in scripts/; the released per-complex numbers live in paper/.
+runs/
 
 # Local tooling / secrets, not part of the benchmark
 .env

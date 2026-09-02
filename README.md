@@ -53,7 +53,8 @@ We call this **redundancy-driven inflation / training-familiarity dependence**, 
 reserving that term for demonstrable train/test boundary crossing. MIRAGE measures the thing
 that matters for a new drug program: **transfer to protein families you have not seen.**
 
-📄 **Paper**: [`paper/mirage.pdf`](paper/) — full experiments, controls, and analysis.
+📄 **Paper**: in preparation — full experiments, controls, and analysis. The benchmark,
+harness, and analysis scripts in this repository stand on their own in the meantime.
 
 ## Models evaluated
 
@@ -129,7 +130,9 @@ See [`examples/`](examples/) for a runnable template and the CSV workflow.
   families.
 - **Family-support slope** — regression of absolute error on `log10(family_size)`, controlling
   for the affinity regime and covariates; a negative slope means accuracy tracks how familiar
-  the family is.
+  the family is. Complexes inside a family are not independent, so the slope is tested with
+  CR1 standard errors **clustered on family**; the unclustered t is kept alongside it
+  (`leakage_slope_t_ols`) for comparison, and is the more permissive of the two.
 - **Temporal arm** — within-target Spearman on a novel target, head-to-head against
   molecular weight and clogp.
 
@@ -149,6 +152,39 @@ df = mirage.load("temporal")
 
 Regenerate from source with [`scripts/build_dataset.py`](scripts/build_dataset.py);
 push your own copy to the Hub with [`scripts/push_to_hub.py`](scripts/push_to_hub.py).
+
+`data/` also carries two small annotation files used by the analysis scripts but not part
+of the Hub dataset: `exposure_annotations.parquet` (per-complex counts of same-protein
+siblings at 95/99%/exact identity, to separate exact-target repetition from remote
+homology) and `pose_targets.json` (the 100 pose-arm targets, by support bin).
+
+## Analysis scripts
+
+The statistics behind the claims above, each runnable on its own and documented in its
+docstring:
+
+| script | what it answers |
+|---|---|
+| [`gap_analysis.py`](scripts/gap_analysis.py) | the headline table above: G_m per method with two-level bootstrap CIs, plus the family-mean memorization ceiling |
+| [`revision_stats.py`](scripts/revision_stats.py) | family-clustered SEs, G_m by assay type, the ligand-similarity axis and an explicit S_f × ligand interaction |
+| [`sensitivity_stats.py`](scripts/sensitivity_stats.py) | is the result an artifact of the 30% identity threshold? (re-annotates at 20/30/40/50%); paired ranking contrasts on shared coverage |
+| [`estimand_stats.py`](scripts/estimand_stats.py) | what G_m is actually made of; controls recomputed on each co-folder's exact coverage; cross-fitted (GroupKFold-on-family) calibration |
+| [`exposure_annotations.py`](scripts/exposure_annotations.py) | builds `data/exposure_annotations.parquet` (needs `mmseqs` on PATH) |
+| [`msa_depth.py`](scripts/msa_depth.py) | is family support just a proxy for available evolutionary signal? (ColabFold MSA depth / Neff vs `S_f`) |
+| [`lba30_ligand_only.py`](scripts/lba30_ligand_only.py) | the ligand-only ceiling on ATOM3D LBA30, with per-baseline coverage reported |
+| [`run_boltz2_affinity.py`](scripts/run_boltz2_affinity.py) | batch local Boltz-2 affinity over a target list |
+| [`run_boltz_api.py`](scripts/run_boltz_api.py) | the hosted Boltz-2.1 arm (separate model version *and* readout — kept in its own column) |
+| [`dock_pose.py`](scripts/dock_pose.py) | the pose arm: smina / gnina docking, symmetry-corrected RMSD against the crystal ligand |
+| [`esmfold2_forge_complete.py`](scripts/esmfold2_forge_complete.py) | the ESMFold2 ipTM confidence-proxy arm (resumable across Forge's daily cap) |
+
+> The scripts that score released model predictions read them from `paper/predictions/`,
+> which is not part of this repository. They are included as an exact record of how each
+> number was computed, and they run on your own models as-is — put one
+> `<model>_redundancy.csv` (`id,prediction`) per model in a directory and point at it:
+>
+> ```bash
+> MIRAGE_PREDICTIONS=./my_preds MIRAGE_RESULTS=./my_results python scripts/revision_stats.py
+> ```
 
 ## Reporting results
 
